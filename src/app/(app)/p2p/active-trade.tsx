@@ -59,7 +59,8 @@ function CountdownTimer({ dueAt }: { dueAt: string | undefined }) {
 }
 
 export default function ActiveTrade() {
-  const { tradeId } = useLocalSearchParams<{ tradeId: string }>();
+  const params = useLocalSearchParams<{ tradeId?: string; id?: string }>();
+  const tradeId = params.tradeId || params.id;
   const router = useRouter();
   const { requestStepUp } = useStepUp();
   const [trade, setTrade] = useState<P2PTrade | null>(null);
@@ -69,6 +70,7 @@ export default function ActiveTrade() {
   const [sending, setSending] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
+  const [copiedNote, setCopiedNote] = useState('');
   const [activeTab, setActiveTab] = useState<'info' | 'chat'>('info');
   const listRef = useRef<FlatList>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -89,7 +91,7 @@ export default function ActiveTrade() {
     setMessages(m);
     setLoading(false);
     // Fetch seller payment details for buyer when trade is active
-    if (t && ['awaiting_payment', 'payment_marked', 'awaiting_release'].includes(t.status)) {
+    if (t && ['awaiting_payment', 'payment_marked', 'awaiting_release', 'disputed'].includes(t.status)) {
       try {
         const pd = await getTradePaymentDetails(tradeId);
         setPaymentDetails(pd);
@@ -101,9 +103,49 @@ export default function ActiveTrade() {
 
   useFocusEffect(useCallback(() => { loadTrade(); }, [loadTrade]));
 
-  // Poll every 10s for live updates
+  // Supabase Realtime for instant chat and status transitions
   useEffect(() => {
-    const id = setInterval(loadTrade, 10000);
+    if (!tradeId) return;
+    const channel = supabase
+      .channel(`p2p_trade_${tradeId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'p2p_trade_messages', filter: `trade_id=eq.${tradeId}` },
+        payload => {
+          if (payload.new) {
+            setMessages(prev => {
+              const incomingId = (payload.new as { id: string }).id;
+              if (prev.some(m => m.id === incomingId)) return prev;
+              const newMsg: P2PTradeMessage = {
+                id: incomingId,
+                tradeId: (payload.new as { trade_id: string }).trade_id,
+                senderId: (payload.new as { sender_id: string | null }).sender_id ?? undefined,
+                message: (payload.new as { message: string }).message,
+                isSystem: Boolean((payload.new as { is_system: boolean }).is_system),
+                createdAt: (payload.new as { created_at: string }).created_at,
+              };
+              return [...prev, newMsg];
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'p2p_trades', filter: `id=eq.${tradeId}` },
+        () => {
+          loadTrade();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tradeId, loadTrade]);
+
+  // Fallback poll every 8s for live updates
+  useEffect(() => {
+    const id = setInterval(loadTrade, 8000);
     return () => clearInterval(id);
   }, [loadTrade]);
 
@@ -358,32 +400,83 @@ export default function ActiveTrade() {
         </View>
       )}
 
-      {/* Action buttons */}
-      {isActive && activeTab === 'info' && (
+      {/* Action buttons / Status footer */}
+      {activeTab === 'info' && (
         <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: DS.space.md, backgroundColor: DS.color.bg, borderTopWidth: 1, borderTopColor: DS.color.border, gap: DS.space.sm }}>
+          {/* Buyer awaiting payment */}
           {isBuyer && s === 'awaiting_payment' && (
-            <Pressable onPress={handleMarkPaid}
-              style={{ backgroundColor: DS.color.buy, borderRadius: DS.radius.xl, padding: DS.space.md, alignItems: 'center' }}>
-              {actionLoading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontWeight: DS.font.bold }}>I Have Paid</Text>}
-            </Pressable>
+            <>
+              <Pressable onPress={handleMarkPaid}
+                style={{ backgroundColor: DS.color.buy, borderRadius: DS.radius.xl, padding: DS.space.md, alignItems: 'center' }}>
+                {actionLoading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontWeight: DS.font.bold }}>I Have Paid</Text>}
+              </Pressable>
+              <Pressable onPress={handleCancel}
+                style={{ backgroundColor: DS.color.surface, borderRadius: DS.radius.xl, padding: DS.space.sm, alignItems: 'center', borderWidth: 1, borderColor: DS.color.border }}>
+                <Text style={{ color: DS.color.sell, fontWeight: DS.font.semibold, fontSize: DS.font.sm }}>Cancel Trade</Text>
+              </Pressable>
+            </>
           )}
+
+          {/* Buyer payment marked */}
+          {isBuyer && s === 'payment_marked' && (
+            <View style={{ gap: DS.space.xs }}>
+              <View style={{ backgroundColor: DS.color.goldBg, borderRadius: DS.radius.lg, padding: DS.space.sm, alignItems: 'center', borderWidth: 1, borderColor: DS.color.gold + '40' }}>
+                <Text style={{ color: DS.color.gold, fontWeight: DS.font.bold, fontSize: DS.font.sm }}>Payment Sent</Text>
+                <Text style={{ color: DS.color.text2, fontSize: DS.font.xs, marginTop: 2, textAlign: 'center' }}>
+                  Waiting for seller to confirm bank receipt and release {trade.cryptoAmount.toFixed(6)} {trade.asset}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Seller awaiting buyer payment */}
+          {isSeller && s === 'awaiting_payment' && (
+            <View style={{ backgroundColor: DS.color.surface, borderRadius: DS.radius.lg, padding: DS.space.sm, alignItems: 'center', borderWidth: 1, borderColor: DS.color.border }}>
+              <Text style={{ color: DS.color.text2, fontSize: DS.font.sm }}>
+                Waiting for buyer to transfer payment...
+              </Text>
+            </View>
+          )}
+
+          {/* Seller payment marked - release crypto */}
           {isSeller && s === 'payment_marked' && (
             <Pressable onPress={handleRelease}
               style={{ backgroundColor: DS.color.buy, borderRadius: DS.radius.xl, padding: DS.space.md, alignItems: 'center' }}>
               {actionLoading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontWeight: DS.font.bold }}>Release Crypto</Text>}
             </Pressable>
           )}
+
+          {/* Completed trade */}
           {s === 'released' && (
-            <Pressable onPress={() => router.push(`/(app)/p2p/review?tradeId=${trade.id}` as RelativePathString)}
-              style={{ backgroundColor: DS.color.gold, borderRadius: DS.radius.xl, padding: DS.space.md, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
-              <Text style={{ color: DS.color.bg, fontWeight: DS.font.bold }}>Rate this Trade</Text>
-              <ChevronRight size={16} color={DS.color.bg} />
-            </Pressable>
+            <View style={{ gap: DS.space.xs }}>
+              <Pressable onPress={() => router.push(`/(app)/p2p/review?tradeId=${trade.id}` as RelativePathString)}
+                style={{ backgroundColor: DS.color.gold, borderRadius: DS.radius.xl, padding: DS.space.md, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
+                <Text style={{ color: DS.color.bg, fontWeight: DS.font.bold }}>Rate this Trade</Text>
+                <ChevronRight size={16} color={DS.color.bg} />
+              </Pressable>
+              <Pressable onPress={() => router.push('/(app)/(tabs)/p2p' as RelativePathString)}
+                style={{ backgroundColor: DS.color.surface, borderRadius: DS.radius.xl, padding: DS.space.sm, alignItems: 'center', borderWidth: 1, borderColor: DS.color.border }}>
+                <Text style={{ color: DS.color.text2, fontWeight: DS.font.semibold, fontSize: DS.font.sm }}>Back to Marketplace</Text>
+              </Pressable>
+            </View>
           )}
-          {(s === 'awaiting_payment') && (
-            <Pressable onPress={handleCancel}
-              style={{ backgroundColor: DS.color.surface, borderRadius: DS.radius.xl, padding: DS.space.sm, alignItems: 'center', borderWidth: 1, borderColor: DS.color.border }}>
-              <Text style={{ color: DS.color.sell, fontWeight: DS.font.semibold, fontSize: DS.font.sm }}>Cancel Trade</Text>
+
+          {/* Disputed trade */}
+          {s === 'disputed' && (
+            <View style={{ gap: DS.space.xs }}>
+              <Pressable onPress={() => router.push(`/(app)/p2p/dispute?tradeId=${trade.id}` as RelativePathString)}
+                style={{ backgroundColor: DS.color.sell, borderRadius: DS.radius.xl, padding: DS.space.md, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
+                <AlertTriangle size={16} color="#fff" />
+                <Text style={{ color: '#fff', fontWeight: DS.font.bold }}>View Dispute Details</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {/* Cancelled / Expired / Refunded */}
+          {['cancelled', 'expired', 'refunded'].includes(s) && (
+            <Pressable onPress={() => router.push('/(app)/(tabs)/p2p' as RelativePathString)}
+              style={{ backgroundColor: DS.color.surface, borderRadius: DS.radius.xl, padding: DS.space.md, alignItems: 'center', borderWidth: 1, borderColor: DS.color.border }}>
+              <Text style={{ color: DS.color.text1, fontWeight: DS.font.bold }}>Back to Marketplace</Text>
             </Pressable>
           )}
         </View>

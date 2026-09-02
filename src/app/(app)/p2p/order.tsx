@@ -9,15 +9,16 @@ import type { RelativePathString } from 'expo-router';
 
 export default function P2POrderRedirect() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, tradeId } = useLocalSearchParams<{ id?: string; tradeId?: string }>();
+  const targetId = tradeId || id;
 
   useEffect(() => {
-    if (id) {
-      router.replace(`/(app)/p2p/active-trade?id=${id}` as RelativePathString);
+    if (targetId) {
+      router.replace(`/(app)/p2p/active-trade?tradeId=${targetId}` as RelativePathString);
     } else {
       router.replace('/(app)/p2p/my-orders' as RelativePathString);
     }
-  }, [id, router]);
+  }, [targetId, router]);
 
   return (
     <View style={{ flex: 1, backgroundColor: DS.color.bg, alignItems: 'center', justifyContent: 'center' }}>

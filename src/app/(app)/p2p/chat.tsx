@@ -129,7 +129,7 @@ export default function P2PChat() {
           <Text style={{ color: C.text1, fontWeight: DS.font.bold, fontSize: 15 }}>P2P Trade Chat</Text>
           <Text style={{ color: C.text3, fontSize: 11 }}>Order #{tradeId.slice(0, 8).toUpperCase()}</Text>
         </View>
-        <Pressable onPress={() => router.push(`/(app)/p2p/active-trade?id=${tradeId}` as RelativePathString)}>
+        <Pressable onPress={() => router.push(`/(app)/p2p/active-trade?tradeId=${tradeId}` as RelativePathString)}>
           <Text style={{ color: C.gold, fontSize: 12, fontWeight: DS.font.semibold }}>View Order</Text>
         </Pressable>
       </View>

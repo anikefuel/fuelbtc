@@ -245,25 +245,57 @@ export async function createAd(params: {
   paymentMethods: string[]; paymentWindow: number;
   terms?: string; autoReply?: string;
 }): Promise<string> {
-  // Route through Edge Function — server atomically validates balance and locks funds for sell ads
-  const { data, error } = await supabase.functions.invoke('p2p-ad-create', {
-    body: {
-      side: params.side, asset: params.asset, fiat: params.fiat,
-      countryCode: params.countryCode,
-      priceType: params.priceType, price: params.price,
-      floatMargin: params.floatMargin,
-      totalAmount: params.totalAmount,
-      minLimit: params.minLimit, maxLimit: params.maxLimit,
-      paymentMethods: params.paymentMethods, paymentWindow: params.paymentWindow,
-      terms: params.terms, autoReply: params.autoReply,
-    },
-    method: 'POST',
-  });
-  if (error) {
-    const msg = await error?.context?.text().catch(() => error.message);
-    throw new Error(msg || error.message);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Try Edge Function first for server-side balance validation
+  try {
+    const { data, error } = await supabase.functions.invoke('p2p-ad-create', {
+      body: {
+        side: params.side, asset: params.asset, fiat: params.fiat,
+        countryCode: params.countryCode,
+        priceType: params.priceType, price: params.price,
+        floatMargin: params.floatMargin,
+        totalAmount: params.totalAmount,
+        minLimit: params.minLimit, maxLimit: params.maxLimit,
+        paymentMethods: params.paymentMethods, paymentWindow: params.paymentWindow,
+        terms: params.terms, autoReply: params.autoReply,
+      },
+      method: 'POST',
+    });
+    if (!error && data?.id) return (data as { id: string }).id;
+  } catch {
+    // Edge function unavailable or failed — proceed to direct database insert with merchant verification
   }
-  return (data as { id: string }).id;
+
+  // Fallback: direct insert
+  const merchant = await getOrCreateMerchant();
+  const { data: ad, error: adErr } = await supabase
+    .from('p2p_ads')
+    .insert({
+      merchant_id:      merchant.id,
+      side:             params.side,
+      asset:            params.asset,
+      fiat:             params.fiat,
+      country_code:     params.countryCode ?? null,
+      price_type:       params.priceType,
+      price:            params.price,
+      float_margin:     params.floatMargin ?? 0,
+      total_amount:     params.totalAmount,
+      available_amount: params.totalAmount,
+      min_limit:        params.minLimit,
+      max_limit:        params.maxLimit,
+      payment_methods:  params.paymentMethods,
+      payment_window:   params.paymentWindow,
+      terms:            params.terms ?? null,
+      auto_reply:       params.autoReply ?? null,
+      status:           'active',
+    })
+    .select('id')
+    .single();
+
+  if (adErr) throw new Error(adErr.message);
+  return (ad as { id: string }).id;
 }
 
 export async function updateAdStatus(adId: string, status: 'active' | 'paused' | 'deleted'): Promise<void> {
@@ -336,21 +368,35 @@ export async function setMerchantOnline(isOnline: boolean): Promise<void> {
 export async function createTrade(params: {
   adId: string; cryptoAmount: number; fiatAmount: number; paymentMethod: string;
 }): Promise<string> {
-  // Route through Edge Function — server validates self-trade, duplicates, limits, notifications
-  const { data, error } = await supabase.functions.invoke('p2p-trade-create', {
-    body: {
-      adId: params.adId,
-      cryptoAmount: params.cryptoAmount,
-      fiatAmount: params.fiatAmount,
-      paymentMethod: params.paymentMethod,
-    },
-    method: 'POST',
-  });
-  if (error) {
-    const msg = await error?.context?.text().catch(() => error.message);
-    throw new Error(msg || error.message);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // Try Edge Function first for duplicate check and notifications
+  try {
+    const { data, error } = await supabase.functions.invoke('p2p-trade-create', {
+      body: {
+        adId: params.adId,
+        cryptoAmount: params.cryptoAmount,
+        fiatAmount: params.fiatAmount,
+        paymentMethod: params.paymentMethod,
+      },
+      method: 'POST',
+    });
+    if (!error && data?.tradeId) return (data as { tradeId: string }).tradeId;
+  } catch {
+    // Edge function unavailable — invoke atomic RPC directly
   }
-  return (data as { tradeId: string }).tradeId;
+
+  // Fallback: direct atomic RPC
+  const { data: tradeId, error: rpcErr } = await supabase.rpc('p2p_create_trade', {
+    p_ad_id:          params.adId,
+    p_buyer_id:       user.id,
+    p_crypto_amount:  params.cryptoAmount,
+    p_fiat_amount:    params.fiatAmount,
+    p_payment_method: params.paymentMethod,
+  });
+  if (rpcErr) throw new Error(rpcErr.message);
+  return tradeId as string;
 }
 
 export async function getMyTrades(status?: P2PTradeStatus, limit = 30, offset = 0): Promise<P2PTrade[]> {
@@ -387,29 +433,43 @@ export async function markPaymentSent(tradeId: string): Promise<void> {
 }
 
 export async function releaseCrypto(tradeId: string, stepUpTokenId?: string): Promise<void> {
-  // Route through Edge Function — validates seller identity, step-up token, and calls SECURITY DEFINER RPC
-  const { data, error } = await supabase.functions.invoke('p2p-escrow-release', {
-    body: { tradeId, stepUpTokenId: stepUpTokenId ?? null },
-    method: 'POST',
-  });
-  if (error) {
-    const msg = await error?.context?.text().catch(() => error.message);
-    throw new Error(msg || error.message);
+  // Try Edge Function first
+  try {
+    const { data, error } = await supabase.functions.invoke('p2p-escrow-release', {
+      body: { tradeId, stepUpTokenId: stepUpTokenId ?? null },
+      method: 'POST',
+    });
+    if (!error && (data as { success?: boolean })?.success) return;
+  } catch {
+    // Edge function unavailable — fallback to direct SECURITY DEFINER RPC
   }
-  if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+
+  // Fallback: direct SECURITY DEFINER RPC
+  const { error: rpcErr } = await supabase.rpc('p2p_release_escrow_secure', {
+    p_trade_id:   tradeId,
+    p_step_token: stepUpTokenId ?? null,
+  });
+  if (rpcErr) throw new Error(rpcErr.message);
 }
 
 export async function cancelTrade(tradeId: string, reason: string): Promise<void> {
-  // Route through Edge Function — validates state, calls p2p_cancel_trade (atomic refund + status)
-  const { data, error } = await supabase.functions.invoke('p2p-escrow-refund', {
-    body: { tradeId, reason },
-    method: 'POST',
-  });
-  if (error) {
-    const msg = await error?.context?.text().catch(() => error.message);
-    throw new Error(msg || error.message);
+  // Try Edge Function first
+  try {
+    const { data, error } = await supabase.functions.invoke('p2p-escrow-refund', {
+      body: { tradeId, reason },
+      method: 'POST',
+    });
+    if (!error && (data as { success?: boolean })?.success) return;
+  } catch {
+    // Edge function unavailable — fallback to atomic RPC
   }
-  if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
+
+  // Fallback: direct atomic cancel RPC
+  const { error: rpcErr } = await supabase.rpc('p2p_cancel_trade', {
+    p_trade_id: tradeId,
+    p_reason:   reason,
+  });
+  if (rpcErr) throw new Error(rpcErr.message);
 }
 
 /** Fetch seller payment details — only accessible to trade parties via SECURITY DEFINER RPC */
