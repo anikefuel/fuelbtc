@@ -2,7 +2,7 @@
   "expo": {
     "name": "ExchangeX",
     "slug": "exchangex",
-    "version": "1.0.125",
+    "version": "1.0.126",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
