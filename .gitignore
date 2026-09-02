@@ -1,0 +1,76 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# ── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+
+# ── Environment & secrets — NEVER commit these ────────────────────────────────
+.env
+.env.*
+.env.local
+.env.*.local
+*.env
+secrets/
+*.secret
+
+# ── API keys / credentials / private keys ────────────────────────────────────
+*.pem
+*.key
+*.p12
+*.p8
+*.jks
+*.mobileprovision
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+*.asc
+service-account*.json
+credentials.json
+google-services.json
+GoogleService-Info.plist
+
+# ── Expo ──────────────────────────────────────────────────────────────────────
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# ── Native builds ─────────────────────────────────────────────────────────────
+.kotlin/
+*.orig.*
+/ios
+/android
+
+# ── Metro ─────────────────────────────────────────────────────────────────────
+.metro-health-check*
+.metro-cache/
+.native-wind-cache/
+
+# ── Debug logs ────────────────────────────────────────────────────────────────
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── TypeScript ────────────────────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── Build / temp ──────────────────────────────────────────────────────────────
+output/
+output.tar.gz
+.vite/
+.sync
+package.json.*
+package.json.[0-9]*
+
+# ── Platform tooling ──────────────────────────────────────────────────────────
+.claude/
+/.skills
+/tasks
+history/*.json
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+historical_context.txt

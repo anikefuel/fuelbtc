@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "ExchangeX",
+    "slug": "exchangex",
+    "version": "1.0.124",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "buildNumber": "1",
+      "bundleIdentifier": "com.miaoda.appchwj03k1qold"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 1,
+      "package": "com.miaoda.appchwj03k1qold"
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-asset",
+      "expo-sqlite",
+      "expo-font",
+      "expo-system-ui",
+      "expo-image",
+      "expo-local-authentication",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow ExchangeX to access your photo library to set a profile photo.",
+          "cameraPermission": "Allow ExchangeX to use the camera to take a profile photo."
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "router": {
+      "root": "src"
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "EXPO_PUBLIC_DOJAH_APP_ID": "6a5a6ad99ff90fe05472dc3c",
+      "EXPO_PUBLIC_DOJAH_PUBLIC_KEY": "prod_pk_SN4s6ypERwRU70gymoICJbJeg",
+      "EXPO_PUBLIC_DOJAH_WIDGET_ID": "6a5b12349ff90fe054784334"
+    },
+    "scheme": "appchwj03k1qold"
+  }
+}

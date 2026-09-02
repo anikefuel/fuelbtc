@@ -1,0 +1,5 @@
+[auth.email]
+enable_confirmations = false
+
+[functions.prembly-widget-page]
+verify_jwt = false
