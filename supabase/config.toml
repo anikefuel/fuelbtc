@@ -1,5 +1,128 @@
 [auth.email]
 enable_confirmations = false
 
+# All repository Edge Functions are declared so the Supabase GitHub
+# integration can deploy them consistently. JWT verification remains enabled
+# for every privileged function during test setup. Provider webhooks will be
+# opened individually only after their signature secrets are configured and
+# verified.
+
+[functions.auth-change-password]
+verify_jwt = true
+
+[functions.auth-resend-verification]
+verify_jwt = true
+
+[functions.auth-send-email-otp]
+verify_jwt = true
+
+[functions.auth-update-profile]
+verify_jwt = true
+
+[functions.auth-verify-email-otp]
+verify_jwt = true
+
+[functions.binance-deposit-sync]
+verify_jwt = true
+
+[functions.binance-diagnostics]
+verify_jwt = true
+
+[functions.binance-sync]
+verify_jwt = true
+
+[functions.binance-withdrawal-sync]
+verify_jwt = true
+
+[functions.earn-accrue-yield]
+verify_jwt = true
+
+[functions.earn-redeem]
+verify_jwt = true
+
+[functions.earn-subscribe]
+verify_jwt = true
+
+[functions.futures-funding-settle]
+verify_jwt = true
+
+[functions.futures-order-cancel]
+verify_jwt = true
+
+[functions.futures-order-place]
+verify_jwt = true
+
+[functions.futures-position-close]
+verify_jwt = true
+
+[functions.futures-sync]
+verify_jwt = true
+
+[functions.futures-transfer]
+verify_jwt = true
+
+[functions.kyc-admin-action]
+verify_jwt = true
+
+[functions.kyc-get-doc-url]
+verify_jwt = true
+
+[functions.kyc-initiate]
+verify_jwt = true
+
+[functions.kyc-webhook-dojah]
+verify_jwt = true
+
+[functions.kyc-webhook-prembly]
+verify_jwt = true
+
+[functions.kyc-webhook-sumsub]
+verify_jwt = true
+
+[functions.liquidation-monitor]
+verify_jwt = true
+
+[functions.order-matcher]
+verify_jwt = true
+
+[functions.p2p-ad-create]
+verify_jwt = true
+
+[functions.p2p-escrow-refund]
+verify_jwt = true
+
+[functions.p2p-escrow-release]
+verify_jwt = true
+
+[functions.p2p-trade-create]
+verify_jwt = true
+
 [functions.prembly-widget-page]
 verify_jwt = false
+
+[functions.provider-action]
+verify_jwt = true
+
+[functions.spot-order-cancel]
+verify_jwt = true
+
+[functions.spot-order-place]
+verify_jwt = true
+
+[functions.spot-order-sync]
+verify_jwt = true
+
+[functions.spot-pairs]
+verify_jwt = true
+
+[functions.step-up-issue]
+verify_jwt = true
+
+[functions.sync-dojah-kyc-status]
+verify_jwt = true
+
+[functions.sync-prembly-kyc-status]
+verify_jwt = true
+
+[functions.wallet-action]
+verify_jwt = true

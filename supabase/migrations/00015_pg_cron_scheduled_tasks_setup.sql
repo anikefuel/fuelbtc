@@ -3,129 +3,17 @@
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 CREATE EXTENSION IF NOT EXISTS pg_net;
 
--- ── 1. pg_cron: call liquidation-monitor every 30 seconds ──────────────────
--- pg_cron minimum granularity is 1 minute; for 30-second intervals we schedule
--- TWO jobs: one at second-0 of each minute, one delayed 30 seconds via pg_sleep.
-SELECT cron.unschedule('liquidation-monitor-s0')  WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'liquidation-monitor-s0');
-SELECT cron.unschedule('liquidation-monitor-s30') WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'liquidation-monitor-s30');
-
-SELECT cron.schedule(
-  'liquidation-monitor-s0',
-  '* * * * *',
-  $$
-  SELECT net.http_post(
-    url     := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/liquidation-monitor',
-    headers := jsonb_build_object(
-      'Content-type', 'application/json',
-      'apikey', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'publishable_key')
-    ),
-    body    := concat('{"time":"', now(), '"}')::jsonb
-  ) AS request_id;
-  $$
-);
-
-SELECT cron.schedule(
-  'liquidation-monitor-s30',
-  '* * * * *',
-  $$
-  SELECT pg_sleep(30);
-  SELECT net.http_post(
-    url     := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/liquidation-monitor',
-    headers := jsonb_build_object(
-      'Content-type', 'application/json',
-      'apikey', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'publishable_key')
-    ),
-    body    := concat('{"time":"', now(), '"}')::jsonb
-  ) AS request_id;
-  $$
-);
-
--- ── 2. pg_cron: call order-matcher every 5 seconds (2 jobs @ 0s + 5s offsets) ─
-SELECT cron.unschedule('order-matcher-s0')  WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'order-matcher-s0');
-SELECT cron.unschedule('order-matcher-s15') WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'order-matcher-s15');
-SELECT cron.unschedule('order-matcher-s30') WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'order-matcher-s30');
-SELECT cron.unschedule('order-matcher-s45') WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'order-matcher-s45');
-
-SELECT cron.schedule(
-  'order-matcher-s0',
-  '* * * * *',
-  $$
-  SELECT net.http_post(
-    url     := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/order-matcher',
-    headers := jsonb_build_object(
-      'Content-type', 'application/json',
-      'apikey', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'publishable_key')
-    ),
-    body    := concat('{"time":"', now(), '"}')::jsonb
-  ) AS request_id;
-  $$
-);
-
-SELECT cron.schedule(
-  'order-matcher-s15',
-  '* * * * *',
-  $$
-  SELECT pg_sleep(15);
-  SELECT net.http_post(
-    url     := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/order-matcher',
-    headers := jsonb_build_object(
-      'Content-type', 'application/json',
-      'apikey', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'publishable_key')
-    ),
-    body    := concat('{"time":"', now(), '"}')::jsonb
-  ) AS request_id;
-  $$
-);
-
-SELECT cron.schedule(
-  'order-matcher-s30',
-  '* * * * *',
-  $$
-  SELECT pg_sleep(30);
-  SELECT net.http_post(
-    url     := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/order-matcher',
-    headers := jsonb_build_object(
-      'Content-type', 'application/json',
-      'apikey', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'publishable_key')
-    ),
-    body    := concat('{"time":"', now(), '"}')::jsonb
-  ) AS request_id;
-  $$
-);
-
-SELECT cron.schedule(
-  'order-matcher-s45',
-  '* * * * *',
-  $$
-  SELECT pg_sleep(45);
-  SELECT net.http_post(
-    url     := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/order-matcher',
-    headers := jsonb_build_object(
-      'Content-type', 'application/json',
-      'apikey', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'publishable_key')
-    ),
-    body    := concat('{"time":"', now(), '"}')::jsonb
-  ) AS request_id;
-  $$
-);
-
--- ── 3. pg_cron: Binance sync every minute ─────────────────────────────────
-SELECT cron.unschedule('binance-sync') WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'binance-sync');
-
-SELECT cron.schedule(
-  'binance-sync',
-  '* * * * *',
-  $$
-  SELECT net.http_post(
-    url     := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/binance-sync',
-    headers := jsonb_build_object(
-      'Content-type', 'application/json',
-      'apikey', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'publishable_key')
-    ),
-    body    := concat('{"time":"', now(), '"}')::jsonb
-  ) AS request_id;
-  $$
-);
+-- ── Scheduled engine jobs — disabled for safe initial deployment ─────────────
+-- Do not start order matching, liquidation monitoring, or Binance account sync
+-- merely by creating a database. These jobs use service-role operations and
+-- must only be enabled by a later reviewed migration after:
+--   1. the required Edge Functions are deployed,
+--   2. internal caller authentication is configured,
+--   3. provider credentials are installed, and
+--   4. trading is explicitly enabled for the environment.
+--
+-- pg_cron and pg_net remain installed so a dedicated enablement migration can
+-- add the schedules when the test environment is ready.
 
 -- ── 4. exchange_provider_configs table (if not yet created) ────────────────
 CREATE TABLE IF NOT EXISTS exchange_provider_configs (
