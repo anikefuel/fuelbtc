@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { ArrowLeft, RefreshCw, ShieldCheck, AlertTriangle, CheckCircle } from 'lucide-react-native';
-import { supabase } from '@/client/supabase';
+import { supabase, SUPABASE_URL } from '@/client/supabase';
 import { DS } from '@/lib/design';
 
 // WebView is native-only — import at top level, guard usage behind EXPO_OS check
@@ -58,8 +58,7 @@ const PREMBLY_ENV_FALLBACK = process.env.EXPO_PUBLIC_PREMBLY_ENVIRONMENT ?? 'pro
 // The Edge Function serves the full HTML page from Supabase's real origin, so the
 // Prembly SDK <script> tag loads freely and camera/microphone permissions work.
 //
-// Widget page URL: https://gehhhbuzjyxtwwljzfyx.supabase.co/functions/v1/prembly-widget-page
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://gehhhbuzjyxtwwljzfyx.supabase.co';
+// The project origin comes from the validated EXPO_PUBLIC_SUPABASE_URL value.
 const WIDGET_PAGE_BASE = `${SUPABASE_URL}/functions/v1/prembly-widget-page`;
 
 function buildWidgetPageUrl(params: {
@@ -449,7 +448,7 @@ export default function PremblyEmbedScreen() {
   });
 
   // Build widget page URL — used by Web iframe (Edge Function serves the HTML with a real origin)
-  // URL: https://gehhhbuzjyxtwwljzfyx.supabase.co/functions/v1/prembly-widget-page?...
+  // URL: <EXPO_PUBLIC_SUPABASE_URL>/functions/v1/prembly-widget-page?...
   const widgetPageUrl = buildWidgetPageUrl({
     configId:     premblyConfigId,
     widgetKey:    premblyWidgetKey,
