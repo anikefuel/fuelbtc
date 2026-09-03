@@ -4,8 +4,7 @@
 // Updates provider health status after each sync.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { crypto } from 'https://deno.land/std@0.208.0/crypto/mod.ts';
-import { encodeHex } from 'https://deno.land/std@0.208.0/encoding/hex.ts';
+import { binanceFetch, hmacSha256 } from '../_shared/binance-signer.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -14,23 +13,13 @@ const BINANCE_FAPI = 'https://fapi.binance.com';
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-// ─── HMAC-SHA256 ──────────────────────────────────────────────────────────────
-async function hmacSha256(secret: string, message: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
-  );
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
-  return encodeHex(new Uint8Array(sig));
-}
-
 async function signedGet(
   baseUrl: string, path: string, params: Record<string, string>,
   apiKey: string, secret: string,
 ): Promise<unknown> {
   const qs  = new URLSearchParams({ ...params, timestamp: Date.now().toString() }).toString();
   const sig = await hmacSha256(secret, qs);
-  const res = await fetch(`${baseUrl}${path}?${qs}&signature=${sig}`, {
+  const res = await binanceFetch(`${baseUrl}${path}?${qs}&signature=${sig}`, {
     headers: { 'X-MBX-APIKEY': apiKey },
   });
   if (!res.ok) throw new Error(`Binance ${path} HTTP ${res.status}: ${await res.text()}`);
@@ -165,7 +154,7 @@ async function syncDepositHistory(cfg: ProviderCfg): Promise<number> {
   const startTime = Date.now() - 24 * 60 * 60 * 1000;
   const qs  = new URLSearchParams({ status: '1', startTime: startTime.toString(), timestamp: Date.now().toString() }).toString();
   const sig = await hmacSha256(cfg.api_secret, qs);
-  const res = await fetch(`${base}/sapi/v1/capital/deposit/hisrec?${qs}&signature=${sig}`, {
+  const res = await binanceFetch(`${base}/sapi/v1/capital/deposit/hisrec?${qs}&signature=${sig}`, {
     headers: { 'X-MBX-APIKEY': cfg.api_key },
   });
   if (!res.ok) {
@@ -231,7 +220,7 @@ async function syncWithdrawalHistory(cfg: ProviderCfg): Promise<number> {
   const startTime = Date.now() - 24 * 60 * 60 * 1000;
   const qs  = new URLSearchParams({ startTime: startTime.toString(), timestamp: Date.now().toString() }).toString();
   const sig = await hmacSha256(cfg.api_secret, qs);
-  const res = await fetch(`${base}/sapi/v1/capital/withdraw/history?${qs}&signature=${sig}`, {
+  const res = await binanceFetch(`${base}/sapi/v1/capital/withdraw/history?${qs}&signature=${sig}`, {
     headers: { 'X-MBX-APIKEY': cfg.api_key },
   });
   if (!res.ok) {

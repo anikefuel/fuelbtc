@@ -61,15 +61,19 @@ Deno.serve(async (req) => {
     if (order.provider_order_id) {
       const { data: provider } = await svc.from('exchange_provider_configs')
         .select('api_key,api_secret,is_testnet')
-        .eq('is_active', true).eq('provider_type', 'binance')
+        .eq('is_active', true).eq('provider_name', 'binance')
         .order('created_at', { ascending: true }).limit(1).maybeSingle();
 
       if (provider) {
         const binanceSymbol = (order.symbol as string).replace('_PERP', '');
         const BASE = futuresBase(provider.is_testnet);
         try {
-          await signedDelete(provider.api_key, provider.api_secret,
-            `${BASE}/fapi/v1/order?symbol=${binanceSymbol}&orderId=${order.provider_order_id}`
+          await signedDelete(
+            BASE,
+            '/fapi/v1/order',
+            { symbol: binanceSymbol, orderId: order.provider_order_id },
+            provider.api_key,
+            provider.api_secret,
           );
         } catch (e) {
           // ORDER_NOT_FOUND on Binance = already cancelled or filled — continue

@@ -54,9 +54,65 @@ export async function buildSignedUrl(
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
+function requestHeaders(initHeaders?: HeadersInit): Record<string, string> {
+  const source = new Headers(initHeaders);
+  const result: Record<string, string> = {};
+  for (const name of ['x-mbx-apikey', 'content-type']) {
+    const value = source.get(name);
+    if (value !== null) result[name] = value;
+  }
+  return result;
+}
+
+/**
+ * Route Binance traffic through the authenticated VPS gateway when configured.
+ * Direct access remains available for local development unless
+ * BINANCE_GATEWAY_REQUIRED=true, which makes production fail closed.
+ */
+export async function binanceFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const gatewayUrl = Deno.env.get('BINANCE_GATEWAY_URL')?.replace(/\/$/, '');
+  const gatewaySecret = Deno.env.get('BINANCE_GATEWAY_SECRET') ?? '';
+  const gatewayRequired = Deno.env.get('BINANCE_GATEWAY_REQUIRED') === 'true';
+
+  if (!gatewayUrl) {
+    if (gatewayRequired) throw new Error('Binance gateway is required but BINANCE_GATEWAY_URL is missing');
+    return fetch(url, { ...init, signal: init.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+  }
+  if (gatewaySecret.length < 32) {
+    throw new Error('BINANCE_GATEWAY_SECRET must contain at least 32 characters');
+  }
+
+  const method = (init.method ?? 'GET').toUpperCase();
+  const body = typeof init.body === 'string' ? init.body : null;
+  if (init.body !== undefined && init.body !== null && body === null) {
+    throw new Error('Binance gateway supports string request bodies only');
+  }
+  const payload = JSON.stringify({
+    url,
+    method,
+    headers: requestHeaders(init.headers),
+    body,
+  });
+  const timestamp = Date.now().toString();
+  const nonce = crypto.randomUUID();
+  const signature = await hmacSha256(gatewaySecret, `${timestamp}.${nonce}.${payload}`);
+
+  return fetch(`${gatewayUrl}/v1/relay`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-FuelBTC-Timestamp': timestamp,
+      'X-FuelBTC-Nonce': nonce,
+      'X-FuelBTC-Signature': signature,
+    },
+    body: payload,
+    signal: init.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+}
+
 async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
   try {
-    const res = await fetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    const res = await binanceFetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
     return res;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

@@ -5,14 +5,14 @@
 // Never returns API keys, secrets, signatures, or auth headers.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { crypto } from 'https://deno.land/std@0.208.0/crypto/mod.ts';
-import { encodeHex } from 'https://deno.land/std@0.208.0/encoding/hex.ts';
+import { binanceFetch, hmacSha256 } from '../_shared/binance-signer.ts';
 
 const SUPABASE_URL  = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ENV_API_KEY   = Deno.env.get('BINANCE_API_KEY');
 const ENV_API_SECRET = Deno.env.get('BINANCE_API_SECRET');
 const BINANCE_BASE  = Deno.env.get('BINANCE_BASE_URL') ?? 'https://api.binance.com';
+const GATEWAY_URL   = Deno.env.get('BINANCE_GATEWAY_URL')?.replace(/\/$/, '');
 
 // Confirm presence — never expose values
 const HAS_API_KEY    = !!ENV_API_KEY    && ENV_API_KEY.length > 8;
@@ -39,19 +39,19 @@ async function requireAdmin(authHeader: string | null) {
   return user;
 }
 
-// ─── HMAC-SHA256 ─────────────────────────────────────────────────────────────
-async function hmacSha256(secret: string, msg: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
-  );
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg));
-  return encodeHex(new Uint8Array(sig));
-}
-
 // ─── Outbound IP detection ────────────────────────────────────────────────────
 // Uses three independent IP-reflection services for redundancy.
 async function detectOutboundIP(): Promise<{ ip: string | null; source: string; latencyMs: number }> {
+  if (GATEWAY_URL) {
+    const t0 = Date.now();
+    try {
+      const res = await fetch(`${GATEWAY_URL}/egress`, { signal: AbortSignal.timeout(5000) });
+      const data = await res.json() as { ip?: string };
+      if (res.ok && data.ip && /^\d{1,3}(\.\d{1,3}){3}$/.test(data.ip)) {
+        return { ip: data.ip, source: `${GATEWAY_URL}/egress`, latencyMs: Date.now() - t0 };
+      }
+    } catch { /* fall back to direct probes */ }
+  }
   const sources = [
     { url: 'https://api.ipify.org?format=json', parse: (t: string) => (JSON.parse(t) as { ip: string }).ip },
     { url: 'https://api4.my-ip.io/ip.json',     parse: (t: string) => (JSON.parse(t) as { ip: string }).ip },
@@ -83,7 +83,9 @@ async function probeIPs(count: number): Promise<{ probes: { attempt: number; ip:
   const known = probes.map(p => p.ip).filter((ip): ip is string => ip !== null);
   const unique = [...new Set(known)];
   const isStatic = known.length < count ? null : unique.length === 1;
-  const note = known.length < count
+  const note = GATEWAY_URL && known.length === count && isStatic
+    ? `All ${count} probes returned the same VPS gateway egress IP. This is the address to allowlist at Binance.`
+    : known.length < count
     ? `Only ${known.length}/${count} probes returned a valid IP — inconclusive.`
     : isStatic
       ? `All ${count} probes returned the same IP. NOTE: this confirms the current egress IP but does NOT guarantee it is permanently static. Supabase does not publish an SLA for fixed egress IPs on the free/pro tier.`
@@ -104,7 +106,7 @@ interface TestResult {
 async function binancePublic(path: string): Promise<TestResult> {
   const t0 = Date.now();
   try {
-    const res  = await fetch(`${BINANCE_BASE}${path}`);
+    const res  = await binanceFetch(`${BINANCE_BASE}${path}`);
     const text = await res.text();
     const latencyMs = Date.now() - t0;
     if (!res.ok) {
@@ -125,7 +127,7 @@ async function binanceSigned(
   try {
     const qs  = new URLSearchParams({ ...params, recvWindow: '10000', timestamp: Date.now().toString() }).toString();
     const sig = await hmacSha256(secret, qs);
-    const res  = await fetch(`${BINANCE_BASE}${path}?${qs}&signature=${sig}`, {
+    const res  = await binanceFetch(`${BINANCE_BASE}${path}?${qs}&signature=${sig}`, {
       headers: { 'X-MBX-APIKEY': apiKey },
     });
     const text = await res.text();
