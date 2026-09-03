@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
     // ── 5. Load provider config ───────────────────────────────────────────────
     const { data: provider } = await svc.from('exchange_provider_configs')
       .select('id,api_key,api_secret,is_testnet')
-      .eq('is_active', true).eq('provider_type', 'binance')
+      .eq('is_active', true).eq('provider_name', 'binance')
       .order('created_at', { ascending: true }).limit(1).maybeSingle();
 
     if (!provider) return err(503, 'NO_PROVIDER', 'No active Binance provider configured');
@@ -206,9 +206,10 @@ Deno.serve(async (req) => {
 
     // ── 10. Set leverage on Binance ───────────────────────────────────────────
     try {
-      await signedPost(prov.api_key, prov.api_secret,
-        `${BASE}/fapi/v1/leverage`,
-        { symbol: binanceSymbol, leverage: String(leverage) }
+      await signedPost(
+        BASE, '/fapi/v1/leverage',
+        { symbol: binanceSymbol, leverage: String(leverage) },
+        prov.api_key, prov.api_secret,
       );
     } catch {
       // Non-fatal — Binance might already have this leverage set
@@ -216,9 +217,10 @@ Deno.serve(async (req) => {
 
     // Set margin type (CROSSED / ISOLATED)
     try {
-      await signedPost(prov.api_key, prov.api_secret,
-        `${BASE}/fapi/v1/marginType`,
-        { symbol: binanceSymbol, marginType: marginMode === 'cross' ? 'CROSSED' : 'ISOLATED' }
+      await signedPost(
+        BASE, '/fapi/v1/marginType',
+        { symbol: binanceSymbol, marginType: marginMode === 'cross' ? 'CROSSED' : 'ISOLATED' },
+        prov.api_key, prov.api_secret,
       );
     } catch {
       // Non-fatal — might already be set
@@ -257,9 +259,8 @@ Deno.serve(async (req) => {
     let binanceResp: BinanceFuturesOrderResp;
     try {
       binanceResp = await signedPost<BinanceFuturesOrderResp>(
+        BASE, '/fapi/v1/order', orderParams,
         prov.api_key, prov.api_secret,
-        `${BASE}/fapi/v1/order`,
-        orderParams
       );
     } catch (e) {
       // Mark order as failed, release locked margin

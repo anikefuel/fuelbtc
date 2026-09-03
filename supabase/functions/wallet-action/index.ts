@@ -11,8 +11,7 @@
 // Secrets and signatures are NEVER logged.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { crypto } from 'https://deno.land/std@0.208.0/crypto/mod.ts';
-import { encodeHex } from 'https://deno.land/std@0.208.0/encoding/hex.ts';
+import { binanceFetch, hmacSha256 } from '../_shared/binance-signer.ts';
 
 const FN = '[wallet-action]';
 
@@ -84,16 +83,6 @@ async function getAuthUser(authHeader: string | null) {
   return user;
 }
 
-// ─── HMAC-SHA256 (never log the secret) ──────────────────────────────────────
-async function hmacSha256(secret: string, msg: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
-  );
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg));
-  return encodeHex(new Uint8Array(sig));
-}
-
 // ─── Binance signed request (timestamp + recvWindow + HMAC SHA256) ────────────
 async function binanceSigned(
   path: string,
@@ -117,13 +106,13 @@ async function binanceSigned(
 
   let res: Response;
   if (method === 'POST') {
-    res = await fetch(endpoint, {
+    res = await binanceFetch(endpoint, {
       method: 'POST',
       headers: { 'X-MBX-APIKEY': apiKey, 'Content-Type': 'application/x-www-form-urlencoded' },
       body: `${qs}&signature=${sig}`,
     });
   } else {
-    res = await fetch(`${endpoint}?${qs}&signature=${sig}`, {
+    res = await binanceFetch(`${endpoint}?${qs}&signature=${sig}`, {
       headers: { 'X-MBX-APIKEY': apiKey },
     });
   }

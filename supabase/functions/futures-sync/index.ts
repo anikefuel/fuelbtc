@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     // Load Binance provider
     const { data: provider } = await svc.from('exchange_provider_configs')
       .select('api_key,api_secret,is_testnet')
-      .eq('is_active', true).eq('provider_type', 'binance')
+      .eq('is_active', true).eq('provider_name', 'binance')
       .order('created_at', { ascending: true }).limit(1).maybeSingle();
 
     if (!provider) {
@@ -84,8 +84,8 @@ Deno.serve(async (req) => {
     let binanceOrders: BinanceOrder[] = [];
     try {
       binanceOrders = await signedGet<BinanceOrder[]>(
+        BASE, '/fapi/v1/openOrders', {},
         provider.api_key, provider.api_secret,
-        `${BASE}/fapi/v1/openOrders`, {}
       );
     } catch (e) {
       console.warn('[futures-sync] Could not fetch Binance orders:', (e as Error).message);
@@ -136,8 +136,8 @@ Deno.serve(async (req) => {
     let binancePositions: BinancePosition[] = [];
     try {
       binancePositions = await signedGet<BinancePosition[]>(
+        BASE, '/fapi/v2/positionRisk', {},
         provider.api_key, provider.api_secret,
-        `${BASE}/fapi/v2/positionRisk`, {}
       );
     } catch (e) {
       console.warn('[futures-sync] Could not fetch Binance positions:', (e as Error).message);

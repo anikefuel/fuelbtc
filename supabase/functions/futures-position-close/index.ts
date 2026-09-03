@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
         .eq('symbol', position.symbol).single(),
       svc.from('exchange_provider_configs')
         .select('api_key,api_secret,is_testnet')
-        .eq('is_active', true).eq('provider_type', 'binance')
+        .eq('is_active', true).eq('provider_name', 'binance')
         .order('created_at', { ascending: true }).limit(1).maybeSingle(),
     ]);
 
@@ -134,8 +134,8 @@ Deno.serve(async (req) => {
 
     try {
       const resp = await signedPost<{ orderId: number; avgPrice: string; executedQty: string; status: string }>(
+        BASE, '/fapi/v1/order', orderParams,
         provider.api_key, provider.api_secret,
-        `${BASE}/fapi/v1/order`, orderParams
       );
       providerOrderId = String(resp.orderId);
       if (resp.avgPrice && parseFloat(resp.avgPrice) > 0) fillPrice = parseFloat(resp.avgPrice);

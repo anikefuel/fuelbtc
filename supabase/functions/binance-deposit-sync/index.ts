@@ -6,22 +6,11 @@
 //   - Records unmatched deposits for admin review if no user found
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { crypto } from 'https://deno.land/std@0.208.0/crypto/mod.ts';
-import { encodeHex } from 'https://deno.land/std@0.208.0/encoding/hex.ts';
+import { binanceFetch, hmacSha256 } from '../_shared/binance-signer.ts';
 
 const SUPABASE_URL  = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-
-// ─── HMAC-SHA256 ─────────────────────────────────────────────────────────────
-async function hmac(secret: string, msg: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
-  );
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg));
-  return encodeHex(new Uint8Array(sig));
-}
 
 async function binanceSigned(
   path: string,
@@ -30,9 +19,9 @@ async function binanceSigned(
   secret: string,
 ): Promise<unknown> {
   const qs  = new URLSearchParams({ ...params, timestamp: Date.now().toString() }).toString();
-  const sig = await hmac(secret, qs);
+  const sig = await hmacSha256(secret, qs);
   const url = `https://api.binance.com${path}?${qs}&signature=${sig}`;
-  const res = await fetch(url, { headers: { 'X-MBX-APIKEY': apiKey } });
+  const res = await binanceFetch(url, { headers: { 'X-MBX-APIKEY': apiKey } });
   const body = await res.text();
   if (!res.ok) throw new Error(`Binance ${res.status}: ${body}`);
   return JSON.parse(body);
@@ -56,12 +45,13 @@ interface ProviderCfg {
   id:         string;
   api_key:    string;
   api_secret: string;
+  is_testnet: boolean;
 }
 
 async function loadConfig(): Promise<ProviderCfg | null> {
   const { data } = await supabase
     .from('exchange_provider_configs')
-    .select('id,api_key,api_secret')
+    .select('id,api_key,api_secret,is_testnet')
     .eq('provider_name', 'binance')
     .eq('is_active', true)
     .not('api_key', 'is', null)
@@ -136,6 +126,13 @@ Deno.serve(async (_req: Request) => {
     const cfg = await loadConfig();
     if (!cfg) {
       return new Response(JSON.stringify({ ok: false, reason: 'no_binance_config' }), { headers: h });
+    }
+    if (cfg.is_testnet) {
+      return new Response(JSON.stringify({
+        ok: true,
+        skipped: true,
+        reason: 'Binance capital deposit history is unavailable on testnet',
+      }), { headers: h });
     }
 
     const state   = await getSyncState();

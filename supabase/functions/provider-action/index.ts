@@ -5,8 +5,7 @@
 // Internal ledger is never overwritten — mismatches create reconciliation_warnings.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { crypto } from 'https://deno.land/std@0.208.0/crypto/mod.ts';
-import { encodeHex } from 'https://deno.land/std@0.208.0/encoding/hex.ts';
+import { binanceFetch, hmacSha256 } from '../_shared/binance-signer.ts';
 
 const SUPABASE_URL  = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY   = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -26,24 +25,14 @@ async function getAdminUser(authHeader: string | null) {
   return user;
 }
 
-// ─── HMAC-SHA256 ─────────────────────────────────────────────────────────────
-async function hmac(secret: string, msg: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    'raw', new TextEncoder().encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
-  );
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg));
-  return encodeHex(new Uint8Array(sig));
-}
-
 async function binanceGet(
   base: string, path: string,
   params: Record<string, string>,
   apiKey: string, secret: string,
 ) {
   const qs  = new URLSearchParams({ ...params, timestamp: Date.now().toString() }).toString();
-  const sig = await hmac(secret, qs);
-  const res = await fetch(`${base}${path}?${qs}&signature=${sig}`, {
+  const sig = await hmacSha256(secret, qs);
+  const res = await binanceFetch(`${base}${path}?${qs}&signature=${sig}`, {
     headers: { 'X-MBX-APIKEY': apiKey },
   });
   if (!res.ok) {
@@ -186,8 +175,8 @@ async function getDepositAddress(
   // Binance sapi requires GET with signed query
   const params: Record<string, string> = { coin: asset, network };
   const qs  = new URLSearchParams({ ...params, timestamp: Date.now().toString() }).toString();
-  const sig = await hmac(cfg.api_secret, qs);
-  const res = await fetch(`${base}/sapi/v1/capital/deposit/address?${qs}&signature=${sig}`, {
+  const sig = await hmacSha256(cfg.api_secret, qs);
+  const res = await binanceFetch(`${base}/sapi/v1/capital/deposit/address?${qs}&signature=${sig}`, {
     headers: { 'X-MBX-APIKEY': cfg.api_key },
   });
 
@@ -243,9 +232,9 @@ async function submitWithdrawal(
   if (params.memo) body.addressTag = params.memo;
 
   const qs  = new URLSearchParams(body).toString();
-  const sig = await hmac(cfg.api_secret, qs);
+  const sig = await hmacSha256(cfg.api_secret, qs);
 
-  const res = await fetch(`${base}/sapi/v1/capital/withdraw/apply`, {
+  const res = await binanceFetch(`${base}/sapi/v1/capital/withdraw/apply`, {
     method: 'POST',
     headers: { 'X-MBX-APIKEY': cfg.api_key, 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `${qs}&signature=${sig}`,
@@ -287,9 +276,9 @@ async function syncDepositHistory(cfg: ProviderCfg, targetUserId?: string) {
 
   const params: Record<string, string> = { status: '1', startTime: startTime.toString() };
   const qs = new URLSearchParams({ ...params, timestamp: Date.now().toString() }).toString();
-  const sig = await hmac(cfg.api_secret, qs);
+  const sig = await hmacSha256(cfg.api_secret, qs);
 
-  const res = await fetch(`${base}/sapi/v1/capital/deposit/hisrec?${qs}&signature=${sig}`, {
+  const res = await binanceFetch(`${base}/sapi/v1/capital/deposit/hisrec?${qs}&signature=${sig}`, {
     headers: { 'X-MBX-APIKEY': cfg.api_key },
   });
 
@@ -370,9 +359,9 @@ async function syncWithdrawalHistory(cfg: ProviderCfg) {
 
   const params: Record<string, string> = { startTime: startTime.toString() };
   const qs  = new URLSearchParams({ ...params, timestamp: Date.now().toString() }).toString();
-  const sig = await hmac(cfg.api_secret, qs);
+  const sig = await hmacSha256(cfg.api_secret, qs);
 
-  const res = await fetch(`${base}/sapi/v1/capital/withdraw/history?${qs}&signature=${sig}`, {
+  const res = await binanceFetch(`${base}/sapi/v1/capital/withdraw/history?${qs}&signature=${sig}`, {
     headers: { 'X-MBX-APIKEY': cfg.api_key },
   });
 
