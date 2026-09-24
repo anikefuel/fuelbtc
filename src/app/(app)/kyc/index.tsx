@@ -17,6 +17,7 @@ import {
 import { DS } from '@/lib/design';
 import {
   getLatestKyc, initiateKyc, submitAppeal, syncDojahStatus, syncPremblyStatus,
+  cancelOrFailKycAttempt,
   resolveKycProvider,
   KYC_TIER_INFO, KYC_STATUS_LABEL, KYC_STATUS_ADMIN_LABEL, DOJAH_WIDGET_ID,
   type KycSubmission, type KycDisplayStatus, type KycProvider,
@@ -295,10 +296,42 @@ export default function KycVerificationScreen() {
     setLoadingData(true);
     try {
       const s = submission?.status ?? '';
-      if (isActive(s)) await syncDojahStatus(submission?.id, currentAttemptId);
+      if (isActive(s)) {
+        if (submission?.provider === 'prembly' || (!submission?.provider && !dojahWidget)) {
+          const syncRes = await syncPremblyStatus(currentAttemptId || submission?.id || '');
+          if (!syncRes || syncRes === 'failed' || syncRes === 'provider_unavailable') {
+            // If Prembly didn't verify or has no result, ensure it doesn't stay pending!
+            await cancelOrFailKycAttempt({
+              submissionId: submission?.id,
+              attemptId: currentAttemptId,
+              reason: 'Verification was not completed. Please try again.',
+            });
+          }
+        } else {
+          await syncDojahStatus(submission?.id, currentAttemptId);
+        }
+      }
       setSubmission(await getLatestKyc());
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Refresh failed');
+    } finally {
+      setLoadingData(false);
+    }
+  }
+
+  async function handleCancelAndRetry() {
+    setError('');
+    setLoadingData(true);
+    try {
+      await cancelOrFailKycAttempt({
+        submissionId: submission?.id,
+        attemptId: currentAttemptId,
+        reason: 'User cancelled unverified attempt to restart.',
+      });
+      const updated = await getLatestKyc();
+      setSubmission(updated);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not reset verification');
     } finally {
       setLoadingData(false);
     }
@@ -437,13 +470,33 @@ export default function KycVerificationScreen() {
                 </Text>
               )}
 
-              {/* Active state hint */}
+              {/* Active state hint & action buttons */}
               {isActive(submission.status) && (
-                <View style={{ backgroundColor: DS.color.goldBg, borderRadius: DS.radius.sm, padding: DS.space.sm, marginTop: DS.space.xs, flexDirection: 'row', gap: DS.space.xs, borderWidth: 1, borderColor: DS.color.gold + '30' }}>
-                  <Info size={13} color={DS.color.gold} />
-                  <Text style={{ color: DS.color.text2, fontSize: DS.font.xs, flex: 1, lineHeight: 17 }}>
-                    Your verification is being processed. Tier 2 limits will be unlocked once confirmed. Pull to refresh.
-                  </Text>
+                <View style={{ marginTop: DS.space.xs, gap: DS.space.xs }}>
+                  <View style={{ backgroundColor: DS.color.goldBg, borderRadius: DS.radius.sm, padding: DS.space.sm, flexDirection: 'row', gap: DS.space.xs, borderWidth: 1, borderColor: DS.color.gold + '30' }}>
+                    <Info size={13} color={DS.color.gold} />
+                    <Text style={{ color: DS.color.text2, fontSize: DS.font.xs, flex: 1, lineHeight: 17 }}>
+                      Your verification is being processed or was not completed. If you closed or didn't finish verification, you can try again below.
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: DS.space.xs, marginTop: 4 }}>
+                    <Pressable
+                      onPress={handleCancelAndRetry}
+                      disabled={loadingData}
+                      style={{ flex: 1, backgroundColor: DS.color.gold, borderRadius: DS.radius.sm, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: DS.color.bg, fontSize: DS.font.xs, fontWeight: DS.font.bold }}>
+                        Didn't Verify? Try Again
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={handleRefresh}
+                      disabled={loadingData}
+                      style={{ backgroundColor: DS.color.surface, borderRadius: DS.radius.sm, paddingHorizontal: DS.space.md, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: DS.color.border }}>
+                      <Text style={{ color: DS.color.text2, fontSize: DS.font.xs, fontWeight: DS.font.semibold }}>
+                        Check Status
+                      </Text>
+                    </Pressable>
+                  </View>
                 </View>
               )}
 

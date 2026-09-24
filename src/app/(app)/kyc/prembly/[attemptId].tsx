@@ -381,6 +381,22 @@ export default function PremblyEmbedScreen() {
       const errMsg = String(msg.error ?? 'Verification error');
       console.warn('[prembly-embed] SDK error:', errMsg);
       setLoadError(errMsg);
+      if (attemptId) {
+        try {
+          await supabase.from('kyc_attempts').update({
+            status: 'failed',
+            failure_reason: errMsg,
+            updated_at: new Date().toISOString(),
+          }).eq('id', attemptId);
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from('kyc_submissions').update({
+              status: 'failed',
+              rejection_reason: errMsg,
+            }).eq('user_id', user.id).eq('status', 'pending');
+          }
+        } catch {}
+      }
     } else if (type === 'prembly_close') {
       // Widget closed — start polling for status resolution instead of navigating away immediately.
       // The webhook / sync may arrive seconds after close, so poll until terminal state.
@@ -395,14 +411,14 @@ export default function PremblyEmbedScreen() {
   useEffect(() => {
     if (!polling || !attemptId) return;
     const TERMINAL = ['verified', 'rejected', 'failed', 'not_started'];
-    const MAX_ATTEMPTS = 20;
+    const MAX_ATTEMPTS = 6;
     let attempts = 0;
     let cancelled = false;
 
     async function poll() {
       while (!cancelled && attempts < MAX_ATTEMPTS) {
         attempts++;
-        await new Promise(r => setTimeout(r, 3000));
+        await new Promise(r => setTimeout(r, 2500));
         if (cancelled) break;
         try {
           const status = await syncPremblyStatus(attemptId!);
@@ -417,11 +433,28 @@ export default function PremblyEmbedScreen() {
           // network hiccup — keep polling
         }
       }
-      // Timed out — show whatever state we have
+      // Timed out — if not verified, mark as failed so it does not stay pending!
       if (!cancelled) {
         setPolling(false);
         setSyncDone(true);
-        setFinalStatus('in_progress');
+        setFinalStatus('failed');
+        if (attemptId) {
+          try {
+            const failReason = 'Verification was not completed before closing. Please try again.';
+            await supabase.from('kyc_attempts').update({
+              status: 'failed',
+              failure_reason: failReason,
+              updated_at: new Date().toISOString(),
+            }).eq('id', attemptId);
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from('kyc_submissions').update({
+                status: 'failed',
+                rejection_reason: failReason,
+              }).eq('user_id', user.id).eq('status', 'pending');
+            }
+          } catch {}
+        }
       }
     }
 
@@ -429,7 +462,24 @@ export default function PremblyEmbedScreen() {
     return () => { cancelled = true; };
   }, [polling, attemptId]);
 
-  function handleClose() {
+  async function handleClose() {
+    if (finalStatus !== 'verified' && attemptId) {
+      try {
+        const failReason = 'Verification closed before completion. Please try again.';
+        await supabase.from('kyc_attempts').update({
+          status: 'failed',
+          failure_reason: failReason,
+          updated_at: new Date().toISOString(),
+        }).eq('id', attemptId);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('kyc_submissions').update({
+            status: 'failed',
+            rejection_reason: failReason,
+          }).eq('user_id', user.id).eq('status', 'pending');
+        }
+      } catch {}
+    }
     if (router.canGoBack()) router.back();
     else router.replace('/(app)/kyc' as never);
   }

@@ -309,9 +309,9 @@ export async function getLatestKyc(): Promise<KycSubmission | null> {
     return null;
   }
 
-  // Also fetch profile.kyc_status to reconcile cases where an admin action updated
-  // the profile but the submission row was not yet updated (e.g. rejected but shows pending).
-  const [subRes, profileRes] = await Promise.all([
+  // Also fetch profile.kyc_status and latest kyc_attempts to reconcile cases
+  // where verification failed, was closed/cancelled, or rejected.
+  const [subRes, profileRes, attemptRes] = await Promise.all([
     supabase
       .from('kyc_submissions')
       .select('*')
@@ -324,22 +324,77 @@ export async function getLatestKyc(): Promise<KycSubmission | null> {
       .select('kyc_status')
       .eq('id', user.id)
       .maybeSingle(),
+    supabase
+      .from('kyc_attempts')
+      .select('id, status, failure_reason, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
   if (subRes.error) throw new Error('Unable to load your verification status. Please retry.');
   if (!subRes.data) return null;
 
   const mapped = mapKyc(subRes.data);
-  // Reconcile: if admin rejected the profile but the submission still shows a stale
-  // active/pending status, honour the profile's decision so the user sees the correct state.
+  // Reconcile: if attempt or profile failed / rejected, do NOT leave status stuck in pending!
   const profileStatus = profileRes.data?.kyc_status as string | undefined;
+  const attemptStatus = attemptRes.data?.status as string | undefined;
   const STALE_STATUSES = ['pending', 'in_progress', 'submitted', 'pending_review', 'manual_review'];
-  if (profileStatus === 'rejected' && STALE_STATUSES.includes(mapped.status)) {
+
+  if ((profileStatus === 'rejected' || attemptStatus === 'rejected') && STALE_STATUSES.includes(mapped.status)) {
     mapped.status = 'rejected' as typeof mapped.status;
-  }
-  if (profileStatus === 'verified' && STALE_STATUSES.includes(mapped.status)) {
+  } else if ((profileStatus === 'failed' || attemptStatus === 'failed' || attemptStatus === 'abandoned') && STALE_STATUSES.includes(mapped.status)) {
+    mapped.status = 'failed' as typeof mapped.status;
+    if (attemptRes.data?.failure_reason && !mapped.rejectionReason) {
+      mapped.rejectionReason = attemptRes.data.failure_reason;
+    }
+  } else if (profileStatus === 'verified' && STALE_STATUSES.includes(mapped.status)) {
     mapped.status = 'verified' as typeof mapped.status;
   }
   return mapped;
+}
+
+/** Cancel or fail a stuck/unverified KYC attempt so user can retry immediately */
+export async function cancelOrFailKycAttempt(params?: {
+  attemptId?: string;
+  submissionId?: string;
+  reason?: string;
+}): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.id) return;
+  const reason = params?.reason || 'Verification was not completed. Please try again.';
+  const now = new Date().toISOString();
+
+  if (params?.attemptId) {
+    await supabase.from('kyc_attempts').update({
+      status: 'failed',
+      failure_reason: reason,
+      updated_at: now,
+    }).eq('id', params.attemptId).eq('user_id', user.id);
+  } else {
+    await supabase.from('kyc_attempts').update({
+      status: 'failed',
+      failure_reason: reason,
+      updated_at: now,
+    }).eq('user_id', user.id).in('status', ['pending', 'in_progress', 'submitted', 'not_started']);
+  }
+
+  if (params?.submissionId) {
+    await supabase.from('kyc_submissions').update({
+      status: 'failed',
+      rejection_reason: reason,
+    }).eq('id', params.submissionId).eq('user_id', user.id);
+  } else {
+    await supabase.from('kyc_submissions').update({
+      status: 'failed',
+      rejection_reason: reason,
+    }).eq('user_id', user.id).in('status', ['pending', 'in_progress', 'submitted', 'not_started', 'under_review']);
+  }
+
+  await supabase.from('profiles').update({
+    kyc_status: 'failed',
+    updated_at: now,
+  }).eq('id', user.id).neq('kyc_status', 'verified');
 }
 
 /** Get KYC submission history for the current user */

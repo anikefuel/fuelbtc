@@ -190,13 +190,29 @@ serve(async (req) => {
     const result = await fetchPremblyResult(providerRef);
 
     if (!result) {
-      // Provider unavailable — update status but don't fail the user
+      // If result is not found or Prembly has no record, mark attempt and submission as failed
+      // so the user does NOT stay stuck in pending!
+      const now = new Date().toISOString();
+      const failReason = 'Verification was not completed on Prembly. Please try again.';
       await admin.from('kyc_attempts').update({
-        status:     'provider_unavailable',
-        updated_at: new Date().toISOString(),
+        status:         'failed',
+        failure_reason: failReason,
+        updated_at:     now,
       }).eq('id', attempt.id);
 
-      return new Response(JSON.stringify({ status: 'provider_unavailable' }), { headers: { ...JSON_H, ...CORS } });
+      if (attempt.submission_id) {
+        await admin.from('kyc_submissions').update({
+          status:           'failed',
+          rejection_reason: failReason,
+        }).eq('id', attempt.submission_id);
+      }
+
+      await admin.from('profiles').update({
+        kyc_status: 'failed',
+        updated_at: now,
+      }).eq('id', attempt.user_id).neq('kyc_status', 'verified');
+
+      return new Response(JSON.stringify({ status: 'failed' }), { headers: { ...JSON_H, ...CORS } });
     }
 
     // ── 6. Map status ──────────────────────────────────────────────────────
@@ -261,6 +277,17 @@ serve(async (req) => {
     if (result.confidence_score != null) attemptUpdate.confidence_score = result.confidence_score;
 
     await admin.from('kyc_attempts').update(attemptUpdate).eq('id', attempt.id);
+
+    // Also update kyc_submissions if submission_id is linked
+    if (attempt.submission_id) {
+      const subUpdate: Record<string, unknown> = {
+        status: internalStatus,
+      };
+      if (internalStatus === 'failed') {
+        subUpdate.rejection_reason = `Prembly: ${rawStatus || 'Verification failed'}`;
+      }
+      await admin.from('kyc_submissions').update(subUpdate).eq('id', attempt.submission_id);
+    }
 
     // ── 9. Update profile (terminal statuses) ─────────────────────────────
     if (['verified', 'failed', 'rejected', 'manual_review'].includes(internalStatus)) {

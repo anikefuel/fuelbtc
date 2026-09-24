@@ -277,6 +277,17 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: 'DB update failed' }), { status: 500, headers: { ...JSON_H, ...CORS } });
   }
 
+  // Also update kyc_submissions if linked
+  if (attempt.submission_id) {
+    const subUpdate: Record<string, unknown> = {
+      status: internalStatus,
+    };
+    if (internalStatus === 'failed') {
+      subUpdate.rejection_reason = `Prembly: ${rawStatus || 'Verification failed'}`;
+    }
+    await admin.from('kyc_submissions').update(subUpdate).eq('id', attempt.submission_id);
+  }
+
   // ── 11. Update user profile (if terminal status) ──────────────────────────
   if (['verified', 'failed', 'rejected', 'manual_review'].includes(internalStatus)) {
     const profileUpdate: Record<string, unknown> = {
