@@ -86,7 +86,7 @@ function buildWidgetPageUrl(params: {
 }
 
 // ── HTML for native WebView (unchanged — WebView has full network access) ──────
-const SDK_URL = 'https://widget.prembly.com/widget.js';
+const SDK_URL = 'https://js.prembly.com/v1/inline/widget-v2.js';
 
 function buildPremblyHtml(params: {
   configId:  string;
@@ -111,23 +111,29 @@ function buildPremblyHtml(params: {
     #loading-state {
       position: fixed; inset: 0; display: flex; flex-direction: column;
       align-items: center; justify-content: center; background: #0a0a0a; gap: 16px; z-index: 100;
+      padding: 24px; text-align: center;
     }
-    .loading-text { color: #C9A84C; font-size: 14px; }
+    .loading-text { color: #C9A84C; font-size: 14px; max-width: 320px; line-height: 1.4; }
     .spinner {
       width: 40px; height: 40px; border: 3px solid #333;
       border-top-color: #C9A84C; border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-retry {
+      display: none; margin-top: 12px; padding: 10px 20px; background: #C9A84C;
+      color: #000; font-weight: bold; border-radius: 8px; border: none; cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <div id="loading-state">
-    <div class="spinner"></div>
+    <div class="spinner" id="spinner"></div>
     <div class="loading-text" id="status-text">Loading verification…</div>
+    <button class="btn-retry" id="retry-btn" onclick="location.reload()">Retry Verification</button>
   </div>
   <div id="prembly-widget"></div>
-  <script src="${SDK_URL}" onerror="document.getElementById('status-text').textContent='Failed to load SDK.';if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({type:'prembly_error',error:'SDK load failed'}));}if(window.parent&&window.parent!==window){window.parent.postMessage(JSON.stringify({type:'prembly_error',error:'SDK load failed'}),'*');}"></script>
+  <script src="${SDK_URL}" onerror="document.getElementById('status-text').textContent='Failed to connect to Prembly verification service.';document.getElementById('spinner').style.display='none';document.getElementById('retry-btn').style.display='block';if(window.ReactNativeWebView){window.ReactNativeWebView.postMessage(JSON.stringify({type:'prembly_error',error:'Prembly SDK script network load failed'}));}if(window.parent&&window.parent!==window){window.parent.postMessage(JSON.stringify({type:'prembly_error',error:'Prembly SDK script network load failed'}),'*');}"></script>
   <script>
     function postToNative(msg) {
       try {
@@ -142,29 +148,75 @@ function buildPremblyHtml(params: {
       var cfg = {
         config_id:    ${JSON.stringify(configId)},
         widget_key:   ${JSON.stringify(widgetKey)},
-        app_id:       ${JSON.stringify(publicKey)},
+        merchant_key: ${JSON.stringify(publicKey || widgetKey)},
+        public_key:   ${JSON.stringify(publicKey || widgetKey)},
+        app_id:       ${JSON.stringify(publicKey || widgetKey)},
         environment:  ${JSON.stringify(env)},
         reference_id: ${JSON.stringify(reference)},
+        user_ref:     ${JSON.stringify(reference)},
+        first_name:   'ExchangeX',
+        last_name:    'Customer',
         ${email   ? `email:   ${JSON.stringify(email)},`   : ''}
         ${country ? `country: ${JSON.stringify(country)},` : ''}
         onSuccess: function(data) { hideLoading(); postToNative({ type: 'prembly_success', data: data || {} }); },
         onError:   function(err)  { hideLoading(); postToNative({ type: 'prembly_error', error: (err&&(err.message||JSON.stringify(err)))||'Verification error' }); },
         onClose:   function()     { postToNative({ type: 'prembly_close' }); },
         onReady:   function()     { hideLoading(); postToNative({ type: 'prembly_ready' }); },
+        callback: function(res) {
+          hideLoading();
+          if (!res) return;
+          if (res.status === 'success' || res.code === '00') {
+            postToNative({ type: 'prembly_success', data: res });
+          } else if (res.status === 'cancelled' || res.code === 'E02') {
+            postToNative({ type: 'prembly_close' });
+          } else {
+            postToNative({ type: 'prembly_error', error: res.message || 'Verification error' });
+          }
+        }
       };
+
+      function tryStart() {
+        if (typeof IdentityKYC !== 'undefined' && typeof IdentityKYC.verify === 'function') {
+          hideLoading();
+          postToNative({ type: 'prembly_ready' });
+          IdentityKYC.verify(cfg);
+          return true;
+        } else if (typeof IdentitypassWidget !== 'undefined') {
+          new IdentitypassWidget(cfg);
+          return true;
+        } else if (typeof PremblyWidget !== 'undefined') {
+          new PremblyWidget(cfg);
+          return true;
+        } else if (typeof Identitypass !== 'undefined') {
+          new Identitypass(cfg);
+          return true;
+        }
+        return false;
+      }
+
       try {
-        if      (typeof IdentitypassWidget !== 'undefined') new IdentitypassWidget(cfg);
-        else if (typeof PremblyWidget      !== 'undefined') new PremblyWidget(cfg);
-        else if (typeof Identitypass       !== 'undefined') new Identitypass(cfg);
-        else {
-          var g = Object.keys(window).filter(function(k){return k.toLowerCase().includes('prembly')||k.toLowerCase().includes('identitypass');}).join(', ');
-          var m = 'SDK not loaded. Globals: '+(g||'none');
-          document.getElementById('status-text').textContent = m;
-          postToNative({ type: 'prembly_error', error: m });
+        if (!tryStart()) {
+          var attempts = 0;
+          var timer = setInterval(function() {
+            attempts++;
+            if (tryStart()) {
+              clearInterval(timer);
+            } else if (attempts >= 10) {
+              clearInterval(timer);
+              var globals = Object.keys(window).filter(function(k){return k.toLowerCase().includes('prembly')||k.toLowerCase().includes('identity');}).join(', ');
+              var m = 'Prembly verification service could not be loaded. Please ensure valid Prembly credentials are configured.';
+              document.getElementById('status-text').textContent = m;
+              document.getElementById('spinner').style.display = 'none';
+              document.getElementById('retry-btn').style.display = 'block';
+              postToNative({ type: 'prembly_error', error: m + ' (globals: ' + (globals || 'none') + ')' });
+            }
+          }, 300);
         }
       } catch(e) {
         var msg = e&&e.message?e.message:String(e);
         document.getElementById('status-text').textContent = 'SDK init error: '+msg;
+        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('retry-btn').style.display = 'block';
         postToNative({ type: 'prembly_error', error: 'SDK init error: '+msg });
       }
     }

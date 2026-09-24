@@ -71,12 +71,12 @@ serve(async (req: Request) => {
       // here since we fully control the HTML). Blob/data URIs for camera.
       "Content-Security-Policy": [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' https://widget.prembly.com",
-        "style-src 'self' 'unsafe-inline'",
+        "script-src 'self' 'unsafe-inline' https://js.prembly.com https://widget.prembly.com https://cdn.jsdelivr.net",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "img-src 'self' data: blob: https:",
         "media-src 'self' blob: https:",
-        "connect-src 'self' https: wss:",
-        "frame-src 'self' https:",
+        "connect-src 'self' https: wss: https://api.prembly.com https://widget-preview.prembly.com",
+        "frame-src 'self' https: https://widget-preview.prembly.com https://kyc.prembly.com",
         "font-src 'self' data: https:",
         "worker-src blob:",
       ].join("; "),
@@ -148,7 +148,7 @@ function buildWidgetHtml(params: {
   </div>
   <div id="prembly-widget"></div>
 
-  <script src="https://widget.prembly.com/widget.js"></script>
+  <script src="https://js.prembly.com/v1/inline/widget-v2.js"></script>
 
   <script>
     var PARENT_ORIGIN = ${jParentOrigin};
@@ -174,9 +174,14 @@ function buildWidgetHtml(params: {
       var cfg = {
         config_id:    ${jConfigId},
         widget_key:   ${jWidgetKey},
+        merchant_key: ${jWidgetKey} || ${jAppId},
+        public_key:   ${jAppId} || ${jWidgetKey},
         app_id:       ${jAppId},
         environment:  ${jEnvironment},
         reference_id: ${jReferenceId},
+        user_ref:     ${jReferenceId},
+        first_name:   'ExchangeX',
+        last_name:    'Customer',
         ${email   ? `email:   ${jEmail},`   : '// no email'}
         ${country ? `country: ${jCountry},` : '// no country'}
         onSuccess: function(data) {
@@ -196,22 +201,55 @@ function buildWidgetHtml(params: {
           hideLoading();
           postToParent({ type: 'prembly_ready' });
         },
+        callback: function(res) {
+          hideLoading();
+          if (!res) return;
+          if (res.status === 'success' || res.code === '00') {
+            postToParent({ type: 'prembly_success', data: res });
+          } else if (res.status === 'cancelled' || res.code === 'E02') {
+            postToParent({ type: 'prembly_close' });
+          } else {
+            postToParent({ type: 'prembly_error', error: res.message || 'Verification error' });
+          }
+        }
       };
 
-      try {
-        if (typeof IdentitypassWidget !== 'undefined') {
+      function tryStart() {
+        if (typeof IdentityKYC !== 'undefined' && typeof IdentityKYC.verify === 'function') {
+          hideLoading();
+          postToParent({ type: 'prembly_ready' });
+          IdentityKYC.verify(cfg);
+          return true;
+        } else if (typeof IdentitypassWidget !== 'undefined') {
           new IdentitypassWidget(cfg);
+          return true;
         } else if (typeof PremblyWidget !== 'undefined') {
           new PremblyWidget(cfg);
+          return true;
         } else if (typeof Identitypass !== 'undefined') {
           new Identitypass(cfg);
-        } else {
-          var globals = Object.keys(window).filter(function(k) {
-            return k.toLowerCase().includes('prembly') || k.toLowerCase().includes('identitypass');
-          }).join(', ');
-          var errMsg = 'SDK not loaded. Globals: ' + (globals || 'none');
-          showError(errMsg);
-          postToParent({ type: 'prembly_error', error: errMsg });
+          return true;
+        }
+        return false;
+      }
+
+      try {
+        if (!tryStart()) {
+          var attempts = 0;
+          var timer = setInterval(function() {
+            attempts++;
+            if (tryStart()) {
+              clearInterval(timer);
+            } else if (attempts >= 10) {
+              clearInterval(timer);
+              var globals = Object.keys(window).filter(function(k) {
+                return k.toLowerCase().includes('prembly') || k.toLowerCase().includes('identity');
+              }).join(', ');
+              var errMsg = 'Prembly verification SDK could not be loaded. Please ensure valid credentials are configured.';
+              showError(errMsg);
+              postToParent({ type: 'prembly_error', error: errMsg + ' (globals: ' + (globals || 'none') + ')' });
+            }
+          }, 300);
         }
       } catch(e) {
         var msg = e && e.message ? e.message : String(e);
@@ -220,7 +258,6 @@ function buildWidgetHtml(params: {
       }
     }
 
-    // widget.js is synchronous — SDK global is available immediately after the tag
     initWidget();
   </script>
 </body>
