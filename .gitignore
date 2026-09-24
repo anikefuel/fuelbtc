@@ -1,0 +1,71 @@
+# ── Package Manager & Dependencies ───────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ── Environment & Secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+.env.local
+.env.*.local
+!.env.example
+*.env
+secrets/
+*.secret
+*.pem
+*.key
+
+# ── Build Artifacts & Caches ──────────────────────────────────────────────────
+dist/
+build/
+web-build/
+.expo/
+.expo-shared/
+.metro-cache/
+.tsbuildinfo
+*.tsbuildinfo
+
+# ── Test & Coverage ───────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Native Build Artifacts (managed workflow) ───────────────────────────────────
+# If native folders are generated via `expo prebuild`, they should not be tracked
+# unless explicitly ejecting.
+android/
+ios/
+
+# ── OS-specific ───────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ── IDE / Editor ──────────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+
+# ── Local Tools & History ─────────────────────────────────────────────────────
+.miaoda/
+history/*.json
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+historical_context.txt
+fuelbtc-project.zip
+.native-wind-cache
+.vite

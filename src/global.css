@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── ExchangeX Premium Dark Theme ─────────────────────────────────────── */
+    --background: 220 16% 6%;        /* #0B0E12 — deepest background */
+    --foreground: 220 14% 96%;       /* #F0F2F5 — primary text */
+    --card: 220 14% 11%;             /* #161B22 — card surface */
+    --card-foreground: 220 14% 96%;
+    --popover: 220 14% 11%;
+    --popover-foreground: 220 14% 96%;
+    --primary: 43 96% 50%;           /* #F0B90B — ExchangeX Gold */
+    --primary-foreground: 220 16% 6%;
+    --secondary: 220 13% 16%;        /* #202630 — secondary surface */
+    --secondary-foreground: 218 11% 65%;
+    --muted: 220 13% 16%;
+    --muted-foreground: 218 11% 55%; /* #848E9C — muted text */
+    --accent: 43 96% 50%;
+    --accent-foreground: 220 16% 6%;
+    --destructive: 353 86% 56%;      /* #F6465D — sell/danger red */
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 18%;           /* #252D38 — subtle border */
+    --input: 220 13% 16%;
+    --ring: 43 96% 50%;
+    --radius: 0.5rem;
+    /* ── Exchange-specific tokens ─── */
+    --success: 152 69% 40%;          /* #0ECB81 — buy/success green */
+    --success-foreground: 0 0% 100%;
+    --warning: 35 100% 57%;          /* #FFA726 — warning amber */
+    --warning-foreground: 220 16% 6%;
+    --info: 214 89% 52%;             /* #1E90FF — info blue */
+    --info-foreground: 0 0% 100%;
+    --surface: 220 14% 13%;          /* #1A2030 — elevated surface */
+    --surface-foreground: 220 14% 96%;
+  }
+
+  .dark {
+    --background: 220 16% 6%;
+    --foreground: 220 14% 96%;
+    --card: 220 14% 11%;
+    --card-foreground: 220 14% 96%;
+    --popover: 220 14% 11%;
+    --popover-foreground: 220 14% 96%;
+    --primary: 43 96% 50%;
+    --primary-foreground: 220 16% 6%;
+    --secondary: 220 13% 16%;
+    --secondary-foreground: 218 11% 65%;
+    --muted: 220 13% 16%;
+    --muted-foreground: 218 11% 55%;
+    --accent: 43 96% 50%;
+    --accent-foreground: 220 16% 6%;
+    --destructive: 353 86% 56%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 18%;
+    --input: 220 13% 16%;
+    --ring: 43 96% 50%;
+  }
+}
