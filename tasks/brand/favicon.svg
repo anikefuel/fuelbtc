@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="fg" x1="0" y1="100%" x2="0" y2="0%">
+      <stop offset="0%" stop-color="#F0B90B"/>
+      <stop offset="55%" stop-color="#FF6B00"/>
+      <stop offset="100%" stop-color="#FFD700"/>
+    </linearGradient>
+  </defs>
+  <!-- Hexagon background -->
+  <path d="M32 2 L58 16 L58 48 L32 62 L6 48 L6 16 Z" fill="#0B0E12"/>
+  <path d="M32 4 L56 17.5 L56 46.5 L32 60 L8 46.5 L8 17.5 Z" fill="none" stroke="#F0B90B" stroke-width="1.5"/>
+  <!-- Flame bolt -->
+  <path d="M37 10 L22 36 L31 36 L26 54 L44 28 L34 28 Z" fill="url(#fg)"/>
+</svg>

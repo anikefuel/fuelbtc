@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FuelBTC — Trade. Earn. Grow.</title>
+  <meta name="description" content="FuelBTC is the fastest-growing crypto exchange. Spot trading, P2P marketplace, and secure wallets — all in one platform." />
+  <meta property="og:title" content="FuelBTC — Trade. Earn. Grow." />
+  <meta property="og:description" content="The crypto exchange built for serious traders. Binance liquidity, P2P marketplace, zero custody risk." />
+  <meta property="og:image" content="https://fuelbtc.com/og.png" />
+  <meta property="og:url" content="https://fuelbtc.com" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg0:        #06080A;
+      --bg1:        #0B0E12;
+      --bg2:        #111519;
+      --bg3:        #161B22;
+      --surface:    #1C2330;
+      --border:     #1E2A38;
+      --gold:       #F0B90B;
+      --gold-light: #F8D843;
+      --gold-dim:   #A07C07;
+      --orange:     #FF6B00;
+      --green:      #0ECB81;
+      --red:        #F6465D;
+      --text1:      #EAECEF;
+      --text2:      #848E9C;
+      --text3:      #4C5665;
+      --font-main:  'Space Grotesk', system-ui, sans-serif;
+      --font-mono:  'Space Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-main);
+      background: var(--bg0);
+      color: var(--text1);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ─── Scrollbar ─────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg0); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ─── Grid noise texture overlay ───────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(240,185,11,0.07) 0%, transparent 70%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M0 0h60v60H0z' fill='none'/%3E%3Ccircle cx='30' cy='30' r='0.5' fill='%23ffffff08'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── Typography ────────────────────────────────────────────────── */
+    h1, h2, h3, h4 { font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+    h1 { font-size: clamp(2.8rem, 7vw, 5.5rem); }
+    h2 { font-size: clamp(2rem, 4.5vw, 3.2rem); }
+    h3 { font-size: clamp(1.2rem, 2vw, 1.5rem); }
+    p  { color: var(--text2); line-height: 1.75; }
+
+    .label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .highlight { color: var(--gold); }
+    .muted     { color: var(--text2); }
+    .mono      { font-family: var(--font-mono); }
+
+    /* ─── Layout helpers ─────────────────────────────────────────────── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    .section   { padding: 120px 0; position: relative; z-index: 1; }
+
+    /* ─── Buttons ────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-family: var(--font-main);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background 0.2s;
+    }
+    .btn:hover::after { background: rgba(255,255,255,0.06); }
+
+    .btn-primary {
+      background: var(--gold);
+      color: #06080A;
+    }
+    .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: 0 8px 32px rgba(240,185,11,0.35); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text1);
+      border: 1.5px solid var(--border);
+    }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-1px); }
+
+    .btn-ghost {
+      background: rgba(240,185,11,0.08);
+      color: var(--gold);
+      border: 1px solid rgba(240,185,11,0.2);
+    }
+    .btn-ghost:hover { background: rgba(240,185,11,0.14); }
+
+    /* ─── NAV ────────────────────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 0 24px;
+      border-bottom: 1px solid transparent;
+      transition: all 0.3s ease;
+    }
+    nav.scrolled {
+      background: rgba(6,8,10,0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom-color: var(--border);
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .nav-logo-mark {
+      width: 36px;
+      height: 36px;
+    }
+    .nav-logo-text {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text1);
+    }
+    .nav-logo-text span { color: var(--gold); }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 36px;
+      list-style: none;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text2);
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text1); }
+    .nav-cta { display: flex; align-items: center; gap: 12px; }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+    }
+
+    /* ─── HERO ────────────────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding-top: 72px;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 200px;
+      background: linear-gradient(to bottom, transparent, var(--bg0));
+      pointer-events: none;
+    }
+
+    /* Animated candlestick bg */
+    .hero-chart-bg {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 4px;
+      padding: 80px 0 0;
+      opacity: 0.07;
+      overflow: hidden;
+    }
+    .candle {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      animation: candleFloat 4s ease-in-out infinite;
+    }
+    .candle-wick { width: 2px; background: var(--text3); }
+    .candle-body { width: 14px; border-radius: 2px; }
+    .candle.bull .candle-body { background: var(--green); }
+    .candle.bear .candle-body { background: var(--red); }
+    @keyframes candleFloat {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-8px); }
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      width: 100%;
+    }
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+      .hero-visual { display: none; }
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(240,185,11,0.08);
+      border: 1px solid rgba(240,185,11,0.2);
+      border-radius: 100px;
+      font-size: 0.8rem;
+      color: var(--gold);
+      font-weight: 500;
+      margin-bottom: 24px;
+    }
+    .hero-badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero-title {
+      margin-bottom: 24px;
+    }
+    .hero-title .line-gold {
+      display: block;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--orange) 60%, var(--gold-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 1.1rem;
+      color: var(--text2);
+      max-width: 480px;
+      margin-bottom: 40px;
+      line-height: 1.8;
+    }
+
+    .hero-cta-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 56px;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+    .hero-stat-item {}
+    .hero-stat-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text1);
+      font-family: var(--font-mono);
+      letter-spacing: -0.02em;
+    }
+    .hero-stat-label { font-size: 0.78rem; color: var(--text3); margin-top: 2px; }
+
+    /* ─── Trading card visual ───────────────────────────────────────── */
+    .hero-visual {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .trade-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .trade-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0.5;
+    }
+    .trade-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .asset-info { display: flex; align-items: center; gap: 12px; }
+    .asset-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #F0B90B, #FF6B00);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #000;
+    }
+    .asset-name { font-weight: 700; font-size: 1rem; }
+    .asset-pair { color: var(--text3); font-size: 0.8rem; }
+    .price-tag {
+      text-align: right;
+    }
+    .price-main {
+      font-family: var(--font-mono);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+    .price-change {
+      font-size: 0.78rem;
+      color: var(--green);
+      background: rgba(14,203,129,0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    /* Mini chart bars */
+    .mini-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 40px;
+      margin-bottom: 20px;
+    }
+    .mini-bar {
+      flex: 1;
+      background: rgba(14,203,129,0.3);
+      border-radius: 2px 2px 0 0;
+      transition: all 0.3s ease;
+    }
+    .mini-bar:hover { background: var(--green); }
+    .mini-bar.down { background: rgba(246,70,93,0.3); }
+
+    .order-book {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .ob-col-label {
+      font-size: 0.72rem;
+      color: var(--text3);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .ob-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+      padding: 3px 6px;
+      border-radius: 3px;
+      margin-bottom: 2px;
+    }
+    .ob-ask .ob-row { background: rgba(246,70,93,0.06); color: var(--red); }
+    .ob-bid .ob-row { background: rgba(14,203,129,0.06); color: var(--green); }
+
+    /* Floating stats card */
+    .float-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .float-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .float-icon.gold { background: rgba(240,185,11,0.12); color: var(--gold); font-size: 1.2rem; }
+    .float-icon.green { background: rgba(14,203,129,0.12); color: var(--green); font-size: 1.2rem; }
+    .float-info-label { font-size: 0.75rem; color: var(--text3); }
+    .float-info-val {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text1);
+    }
+
+    /* ─── TICKER TAPE ────────────────────────────────────────────────── */
+    .ticker-section {
+      padding: 20px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+    .ticker-track {
+      display: flex;
+      gap: 0;
+      animation: tickerScroll 30s linear infinite;
+      width: max-content;
+    }
+    .ticker-track:hover { animation-play-state: paused; }
+    @keyframes tickerScroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .ticker-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 32px;
+      white-space: nowrap;
+      border-right: 1px solid var(--border);
+    }
+    .ticker-pair { font-weight: 600; font-size: 0.88rem; }
+    .ticker-price { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text2); }
+    .ticker-chg { font-size: 0.78rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+    .ticker-chg.up   { color: var(--green); background: rgba(14,203,129,0.1); }
+    .ticker-chg.down { color: var(--red);   background: rgba(246,70,93,0.1); }
+
+    /* ─── FEATURES ───────────────────────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      margin-top: 64px;
+    }
+    @media (max-width: 900px) { .features-grid { grid-template-columns: 1fr; } }
+
+    .feature-card {
+      background: var(--bg1);
+      padding: 40px 36px;
+      transition: background 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card:hover { background: var(--bg2); }
+    .feature-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--orange));
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+    .feature-card:hover::after { transform: scaleX(1); }
+
+    .feature-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: rgba(240,185,11,0.08);
+      border: 1px solid rgba(240,185,11,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      margin-bottom: 24px;
+    }
+    .feature-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text1);
+    }
+    .feature-desc { font-size: 0.9rem; color: var(--text2); line-height: 1.7; }
+
+    /* ─── STATS BAR ──────────────────────────────────────────────────── */
+    .stats-bar {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      overflow: hidden;
+      margin-top: 64px;
+    }
+    @media (max-width: 768px) { .stats-bar { grid-template-columns: repeat(2, 1fr); } }
+    .stat-cell {
+      padding: 40px 32px;
+      border-right: 1px solid var(--border);
+    }
+    .stat-cell:last-child { border-right: none; }
+    .stat-cell-num {
+      font-family: var(--font-mono);
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text1);
+      letter-spacing: -0.03em;
+    }
+    .stat-cell-num span { color: var(--gold); }
+    .stat-cell-label { font-size: 0.8rem; color: var(--text3); margin-top: 6px; }
+
+    /* ─── P2P SECTION ────────────────────────────────────────────────── */
+    .p2p-section { position: relative; overflow: hidden; }
+    .p2p-glow {
+      position: absolute;
+      right: -200px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(240,185,11,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .p2p-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+    @media (max-width: 900px) { .p2p-grid { grid-template-columns: 1fr; gap: 48px; } }
+
+    .p2p-features { display: flex; flex-direction: column; gap: 24px; margin-top: 32px; }
+    .p2p-feature {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .p2p-feature-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(240,185,11,0.08);
+      border: 1px solid rgba(240,185,11,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1rem;
+      margin-top: 2px;
+    }
+    .p2p-feature-text h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
+    .p2p-feature-text p  { font-size: 0.85rem; color: var(--text2); }
+
+    .p2p-visual {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .p2p-offer {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: border-color 0.2s;
+    }
+    .p2p-offer:hover { border-color: var(--gold); }
+    .p2p-trader { display: flex; align-items: center; gap: 10px; }
+    .p2p-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--surface), var(--bg3));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--gold);
+      border: 1px solid var(--border);
+    }
+    .p2p-trader-name { font-size: 0.88rem; font-weight: 600; }
+    .p2p-trader-stats { font-size: 0.72rem; color: var(--text3); }
+    .p2p-price-info { text-align: right; }
+    .p2p-price-val {
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text1);
+    }
+    .p2p-price-limit { font-size: 0.72rem; color: var(--text3); }
+    .p2p-buy-btn {
+      padding: 7px 18px;
+      background: var(--green);
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: var(--font-main);
+      transition: opacity 0.2s;
+    }
+    .p2p-buy-btn:hover { opacity: 0.85; }
+
+    /* ─── KYC / TRUST SECTION ─────────────────────────────────────────── */
+    .trust-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      margin-top: 64px;
+    }
+    @media (max-width: 900px) { .trust-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .trust-grid { grid-template-columns: 1fr; } }
+    .trust-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 24px;
+      text-align: center;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .trust-card:hover { transform: translateY(-4px); border-color: var(--gold-dim); }
+    .trust-card-icon { font-size: 2rem; margin-bottom: 16px; }
+    .trust-card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 8px; }
+    .trust-card-desc  { font-size: 0.82rem; color: var(--text2); line-height: 1.6; }
+
+    /* ─── APP CTA ─────────────────────────────────────────────────────── */
+    .app-cta-section {
+      padding: 120px 0;
+      position: relative;
+      z-index: 1;
+    }
+    .app-cta-inner {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 80px 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .app-cta-inner::before {
+      content: '';
+      position: absolute;
+      top: -100px;
+      right: -100px;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(240,185,11,0.08) 0%, transparent 70%);
+    }
+    @media (max-width: 768px) {
+      .app-cta-inner { flex-direction: column; padding: 48px 32px; text-align: center; align-items: flex-start; }
+    }
+    .app-cta-text h2 { margin-bottom: 16px; }
+    .app-cta-text p  { font-size: 1rem; color: var(--text2); max-width: 440px; }
+    .app-cta-buttons { display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+    .store-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 24px;
+      min-width: 200px;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .store-btn:hover { border-color: var(--gold); background: var(--surface); }
+    .store-btn-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .store-btn-text small { display: block; font-size: 0.68rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+    .store-btn-text strong { display: block; font-size: 0.95rem; color: var(--text1); font-weight: 600; }
+
+    /* ─── FOOTER ──────────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 64px 0 40px;
+      position: relative;
+      z-index: 1;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+    @media (max-width: 768px) {
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .footer-brand { grid-column: 1/-1; }
+    }
+    .footer-brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      text-decoration: none;
+    }
+    .footer-brand-logo-text {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text1);
+    }
+    .footer-brand-logo-text span { color: var(--gold); }
+    .footer-desc { font-size: 0.85rem; color: var(--text3); line-height: 1.7; max-width: 280px; margin-bottom: 24px; }
+    .footer-socials { display: flex; gap: 10px; }
+    .social-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text2);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .social-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(240,185,11,0.08); }
+    .footer-col-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text3);
+      margin-bottom: 16px;
+    }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-col ul a {
+      text-decoration: none;
+      color: var(--text2);
+      font-size: 0.88rem;
+      transition: color 0.2s;
+    }
+    .footer-col ul a:hover { color: var(--text1); }
+    .footer-bottom {
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-bottom-copy { font-size: 0.8rem; color: var(--text3); }
+    .footer-bottom-links { display: flex; gap: 24px; }
+    .footer-bottom-links a { font-size: 0.8rem; color: var(--text3); text-decoration: none; transition: color 0.2s; }
+    .footer-bottom-links a:hover { color: var(--text2); }
+
+    /* ─── Section header ─────────────────────────────────────────────── */
+    .section-header { text-align: center; max-width: 600px; margin: 0 auto; }
+    .section-header .label { margin-bottom: 12px; display: block; }
+    .section-header h2 { margin-bottom: 16px; }
+    .section-header p { font-size: 1rem; }
+
+    /* ─── Divider ─────────────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 0;
+    }
+
+    /* ─── Animations ─────────────────────────────────────────────────── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeInUp 0.7s ease both; }
+    .fade-in-d1 { animation-delay: 0.1s; }
+    .fade-in-d2 { animation-delay: 0.2s; }
+    .fade-in-d3 { animation-delay: 0.3s; }
+    .fade-in-d4 { animation-delay: 0.4s; }
+
+    /* ─── Scroll line decor ───────────────────────────────────────────── */
+    .vert-line {
+      position: absolute;
+      left: 50%;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--border), transparent);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════
+       NAV
+  ══════════════════════════════════════════════════ -->
+  <nav id="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <!-- Inline flame logomark -->
+        <svg class="nav-logo-mark" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="nfg" x1="0" y1="100%" x2="0" y2="0%">
+              <stop offset="0%" stop-color="#F0B90B"/>
+              <stop offset="55%" stop-color="#FF6B00"/>
+              <stop offset="100%" stop-color="#FFD700"/>
+            </linearGradient>
+          </defs>
+          <path d="M32 2 L58 16 L58 48 L32 62 L6 48 L6 16 Z" fill="#0B0E12"/>
+          <path d="M32 4 L56 17.5 L56 46.5 L32 60 L8 46.5 L8 17.5 Z" fill="none" stroke="#F0B90B" stroke-width="1.5"/>
+          <path d="M37 10 L22 36 L31 36 L26 54 L44 28 L34 28 Z" fill="url(#nfg)"/>
+        </svg>
+        <span class="nav-logo-text"><span>Fuel</span>BTC</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#markets">Markets</a></li>
+        <li><a href="#p2p">P2P</a></li>
+        <li><a href="#security">Security</a></li>
+      </ul>
+      <div class="nav-cta">
+        <a href="#" class="btn btn-outline" style="padding:10px 20px;font-size:0.85rem;">Log In</a>
+        <a href="#" class="btn btn-primary" style="padding:10px 20px;font-size:0.85rem;">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════
+       HERO
+  ══════════════════════════════════════════════════ -->
+  <section class="hero">
+    <!-- Animated candle bg -->
+    <div class="hero-chart-bg" aria-hidden="true" id="candleBg"></div>
+
+    <div class="container">
+      <div class="hero-grid">
+        <!-- Left: Copy -->
+        <div>
+          <div class="hero-badge fade-in">
+            <span class="hero-badge-dot"></span>
+            Live on fuelbtc.com
+          </div>
+          <h1 class="hero-title fade-in fade-in-d1">
+            The Crypto Exchange That
+            <span class="line-gold">Fuels Your Edge</span>
+          </h1>
+          <p class="hero-sub fade-in fade-in-d2">
+            Spot trading powered by Binance liquidity. P2P marketplace with escrow protection.
+            Instant KYC. Built for traders who demand speed, depth, and trust.
+          </p>
+          <div class="hero-cta-row fade-in fade-in-d3">
+            <a href="#" class="btn btn-primary">
+              <span>Start Trading</span>
+              <span>→</span>
+            </a>
+            <a href="#" class="btn btn-outline">Explore Markets</a>
+          </div>
+          <div class="hero-stats fade-in fade-in-d4">
+            <div class="hero-stat-item">
+              <div class="hero-stat-value">$2.4B+</div>
+              <div class="hero-stat-label">24h Volume</div>
+            </div>
+            <div class="hero-stat-item">
+              <div class="hero-stat-value">180+</div>
+              <div class="hero-stat-label">Supported Assets</div>
+            </div>
+            <div class="hero-stat-item">
+              <div class="hero-stat-value">0.1%</div>
+              <div class="hero-stat-label">Maker Fee</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Trading card mock -->
+        <div class="hero-visual fade-in fade-in-d2">
+          <div class="trade-card">
+            <div class="trade-card-header">
+              <div class="asset-info">
+                <div class="asset-icon">₿</div>
+                <div>
+                  <div class="asset-name">Bitcoin</div>
+                  <div class="asset-pair">BTC / USDT</div>
+                </div>
+              </div>
+              <div class="price-tag">
+                <div class="price-main">$67,482.50</div>
+                <span class="price-change">+2.34%</span>
+              </div>
+            </div>
+            <div class="mini-chart">
+              <div class="mini-bar" style="height:28%"></div>
+              <div class="mini-bar" style="height:45%"></div>
+              <div class="mini-bar down" style="height:38%"></div>
+              <div class="mini-bar" style="height:60%"></div>
+              <div class="mini-bar" style="height:52%"></div>
+              <div class="mini-bar down" style="height:44%"></div>
+              <div class="mini-bar" style="height:70%"></div>
+              <div class="mini-bar" style="height:85%"></div>
+              <div class="mini-bar" style="height:78%"></div>
+              <div class="mini-bar down" style="height:65%"></div>
+              <div class="mini-bar" style="height:72%"></div>
+              <div class="mini-bar" style="height:90%"></div>
+              <div class="mini-bar" style="height:100%"></div>
+              <div class="mini-bar down" style="height:88%"></div>
+              <div class="mini-bar" style="height:94%"></div>
+              <div class="mini-bar" style="height:100%"></div>
+            </div>
+            <div class="order-book">
+              <div class="ob-ask">
+                <div class="ob-col-label">Ask</div>
+                <div class="ob-row"><span>67,510.00</span><span>0.142</span></div>
+                <div class="ob-row"><span>67,505.50</span><span>0.088</span></div>
+                <div class="ob-row"><span>67,492.00</span><span>0.321</span></div>
+              </div>
+              <div class="ob-bid">
+                <div class="ob-col-label">Bid</div>
+                <div class="ob-row"><span>67,482.50</span><span>0.256</span></div>
+                <div class="ob-row"><span>67,475.00</span><span>0.109</span></div>
+                <div class="ob-row"><span>67,460.25</span><span>0.448</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="float-card">
+              <div class="float-icon gold">⚡</div>
+              <div>
+                <div class="float-info-label">Order Exec</div>
+                <div class="float-info-val">&lt; 50ms</div>
+              </div>
+            </div>
+            <div class="float-card">
+              <div class="float-icon green">✓</div>
+              <div>
+                <div class="float-info-label">Uptime</div>
+                <div class="float-info-val">99.97%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════
+       TICKER TAPE
+  ══════════════════════════════════════════════════ -->
+  <div class="ticker-section" aria-hidden="true">
+    <div class="ticker-track" id="tickerTrack">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       STATS BAR
+  ══════════════════════════════════════════════════ -->
+  <section class="section" id="markets">
+    <div class="container">
+      <div class="section-header">
+        <span class="label">Platform Scale</span>
+        <h2>Numbers That Speak</h2>
+        <p>FuelBTC is growing fast — trusted by traders from over 40 countries.</p>
+      </div>
+      <div class="stats-bar">
+        <div class="stat-cell">
+          <div class="stat-cell-num">$2.4<span>B</span></div>
+          <div class="stat-cell-label">24h Trading Volume</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-cell-num">180<span>+</span></div>
+          <div class="stat-cell-label">Listed Assets</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-cell-num">40<span>+</span></div>
+          <div class="stat-cell-label">Countries Supported</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-cell-num">1.2<span>M</span></div>
+          <div class="stat-cell-label">Registered Users</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       FEATURES
+  ══════════════════════════════════════════════════ -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <span class="label">Core Platform</span>
+        <h2>Everything You Need<br>to Trade Like a Pro</h2>
+        <p>Professional-grade tools without the complexity — built for both first-time traders and seasoned pros.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📈</div>
+          <div class="feature-title">Spot Trading</div>
+          <p class="feature-desc">Deep liquidity from Binance order books. Trade 180+ pairs with real-time candlestick charts, 15+ timeframes, and 7 technical indicators.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🤝</div>
+          <div class="feature-title">P2P Marketplace</div>
+          <p class="feature-desc">Buy and sell crypto directly with local traders. Escrow-protected transactions, flexible payment methods, and zero trading fees.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👛</div>
+          <div class="feature-title">Secure Wallet</div>
+          <p class="feature-desc">Internal ledger-based wallet system. Generate deposit addresses, track balances across assets, and withdraw with full transparency.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <div class="feature-title">Automated KYC</div>
+          <p class="feature-desc">Multi-provider verification via Sumsub and Dojah. Tier-based access unlocks higher limits as your identity is verified.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-title">Ultra-Low Latency</div>
+          <p class="feature-desc">Orders executed in under 50ms via optimized Binance API routing. Real-time price feeds via WebSocket with auto-reconnect.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <div class="feature-title">Pro Charts</div>
+          <p class="feature-desc">ECharts-powered professional charts with SMA, EMA, MACD, Bollinger Bands, RSI, drawing tools, and fullscreen mode.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       P2P
+  ══════════════════════════════════════════════════ -->
+  <section class="section p2p-section" id="p2p">
+    <div class="p2p-glow"></div>
+    <div class="container">
+      <div class="p2p-grid">
+        <!-- Left: P2P live feed mock -->
+        <div class="p2p-visual">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <span class="label">Live P2P Offers</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--green);">
+              <span class="hero-badge-dot" style="width:5px;height:5px;background:var(--green);border-radius:50%;display:inline-block;"></span>
+              Updated live
+            </span>
+          </div>
+          <div class="p2p-offer">
+            <div class="p2p-trader">
+              <div class="p2p-avatar">KA</div>
+              <div>
+                <div class="p2p-trader-name">KhaleelA</div>
+                <div class="p2p-trader-stats">934 trades · 99.2% ✓</div>
+              </div>
+            </div>
+            <div class="p2p-price-info">
+              <div class="p2p-price-val">₦69,200/<small style="font-size:0.7rem;color:var(--text3);">USDT</small></div>
+              <div class="p2p-price-limit">Limit: 5,000 – 250,000 NGN</div>
+            </div>
+            <button class="p2p-buy-btn">Buy</button>
+          </div>
+          <div class="p2p-offer">
+            <div class="p2p-trader">
+              <div class="p2p-avatar">ML</div>
+              <div>
+                <div class="p2p-trader-name">MamaLisa</div>
+                <div class="p2p-trader-stats">1,204 trades · 98.7% ✓</div>
+              </div>
+            </div>
+            <div class="p2p-price-info">
+              <div class="p2p-price-val">₦68,950/<small style="font-size:0.7rem;color:var(--text3);">USDT</small></div>
+              <div class="p2p-price-limit">Limit: 10,000 – 500,000 NGN</div>
+            </div>
+            <button class="p2p-buy-btn">Buy</button>
+          </div>
+          <div class="p2p-offer">
+            <div class="p2p-trader">
+              <div class="p2p-avatar">TF</div>
+              <div>
+                <div class="p2p-trader-name">TradeFuel</div>
+                <div class="p2p-trader-stats">412 trades · 100% ✓</div>
+              </div>
+            </div>
+            <div class="p2p-price-info">
+              <div class="p2p-price-val">₦69,500/<small style="font-size:0.7rem;color:var(--text3);">USDT</small></div>
+              <div class="p2p-price-limit">Limit: 2,000 – 100,000 NGN</div>
+            </div>
+            <button class="p2p-buy-btn">Buy</button>
+          </div>
+          <div style="text-align:center;margin-top:8px;">
+            <a href="#" style="font-size:0.82rem;color:var(--text3);text-decoration:none;">View all 240+ offers →</a>
+          </div>
+        </div>
+
+        <!-- Right: Copy -->
+        <div>
+          <span class="label">P2P Marketplace</span>
+          <h2 style="margin-top:12px;margin-bottom:16px;">Trade Crypto with<br>Real People, Zero Risk</h2>
+          <p style="margin-bottom:0;">Our escrow-protected P2P engine connects buyers and sellers in 40+ countries. Pay the way you want, get crypto safely.</p>
+          <div class="p2p-features">
+            <div class="p2p-feature">
+              <div class="p2p-feature-icon">🔒</div>
+              <div class="p2p-feature-text">
+                <h4>Escrow Protection</h4>
+                <p>Crypto is locked in escrow until payment is confirmed — no risk of scams or chargebacks.</p>
+              </div>
+            </div>
+            <div class="p2p-feature">
+              <div class="p2p-feature-icon">💳</div>
+              <div class="p2p-feature-text">
+                <h4>Any Payment Method</h4>
+                <p>Bank transfer, mobile money, PayPal, Venmo, Wise — traders set their own accepted methods.</p>
+              </div>
+            </div>
+            <div class="p2p-feature">
+              <div class="p2p-feature-icon">🌍</div>
+              <div class="p2p-feature-text">
+                <h4>40+ Fiat Currencies</h4>
+                <p>NGN, GHS, KES, ZAR, USD, GBP, EUR and more — trade in your local currency.</p>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:32px;">
+            <a href="#" class="btn btn-primary">Open P2P Marketplace</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       TRUST / SECURITY
+  ══════════════════════════════════════════════════ -->
+  <section class="section" id="security">
+    <div class="container">
+      <div class="section-header">
+        <span class="label">Security & Compliance</span>
+        <h2>Built on Trust,<br>Engineered for Safety</h2>
+        <p>FuelBTC takes security seriously. Multiple layers of protection keep your funds and identity safe.</p>
+      </div>
+      <div class="trust-grid">
+        <div class="trust-card">
+          <div class="trust-card-icon">🪪</div>
+          <div class="trust-card-title">Multi-Provider KYC</div>
+          <p class="trust-card-desc">Sumsub + Dojah verification with tier-based access control and automated compliance routing.</p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-card-icon">🔐</div>
+          <div class="trust-card-title">Cold Storage</div>
+          <p class="trust-card-desc">95% of funds held in air-gapped cold storage. Only operational liquidity stays in hot wallets.</p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-card-icon">🛡️</div>
+          <div class="trust-card-title">2FA Everywhere</div>
+          <p class="trust-card-desc">TOTP and SMS 2FA on all sensitive actions — withdrawals, logins, API key management.</p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-card-icon">⚖️</div>
+          <div class="trust-card-title">Dispute Resolution</div>
+          <p class="trust-card-desc">Dedicated admin dispute team for P2P conflicts with evidence-based escrow release decisions.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ══════════════════════════════════════════════════
+       APP CTA
+  ══════════════════════════════════════════════════ -->
+  <section class="app-cta-section">
+    <div class="container">
+      <div class="app-cta-inner">
+        <div class="app-cta-text">
+          <span class="label" style="display:block;margin-bottom:12px;">Available Now</span>
+          <h2>Trade Anywhere,<br><span class="highlight">Anytime.</span></h2>
+          <p style="margin-top:16px;">The FuelBTC mobile app gives you the full power of the platform — pro charts, P2P trading, wallet management — in your pocket.</p>
+        </div>
+        <div class="app-cta-buttons">
+          <a href="#" class="store-btn">
+            <span class="store-btn-icon">🍎</span>
+            <div class="store-btn-text">
+              <small>Download on the</small>
+              <strong>App Store</strong>
+            </div>
+          </a>
+          <a href="#" class="store-btn">
+            <span class="store-btn-icon">▶</span>
+            <div class="store-btn-text">
+              <small>Get it on</small>
+              <strong>Google Play</strong>
+            </div>
+          </a>
+          <a href="#" class="store-btn">
+            <span class="store-btn-icon">📦</span>
+            <div class="store-btn-text">
+              <small>Download</small>
+              <strong>APK Direct</strong>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════════════ -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="/" class="footer-brand-logo">
+            <svg width="28" height="28" viewBox="0 0 64 64" fill="none">
+              <defs>
+                <linearGradient id="ffg" x1="0" y1="100%" x2="0" y2="0%">
+                  <stop offset="0%" stop-color="#F0B90B"/>
+                  <stop offset="55%" stop-color="#FF6B00"/>
+                  <stop offset="100%" stop-color="#FFD700"/>
+                </linearGradient>
+              </defs>
+              <path d="M32 2 L58 16 L58 48 L32 62 L6 48 L6 16 Z" fill="#0B0E12"/>
+              <path d="M32 4 L56 17.5 L56 46.5 L32 60 L8 46.5 L8 17.5 Z" fill="none" stroke="#F0B90B" stroke-width="1.5"/>
+              <path d="M37 10 L22 36 L31 36 L26 54 L44 28 L34 28 Z" fill="url(#ffg)"/>
+            </svg>
+            <span class="footer-brand-logo-text"><span>Fuel</span>BTC</span>
+          </a>
+          <p class="footer-desc">The crypto exchange built for serious traders. Deep liquidity, P2P marketplace, automated KYC, and ultra-low fees — all on one platform.</p>
+          <div class="footer-socials">
+            <a href="#" class="social-btn" aria-label="Twitter/X">𝕏</a>
+            <a href="#" class="social-btn" aria-label="Telegram">✈</a>
+            <a href="#" class="social-btn" aria-label="Discord">💬</a>
+            <a href="#" class="social-btn" aria-label="LinkedIn">in</a>
+          </div>
+        </div>
+        <div class="footer-col">
+          <div class="footer-col-title">Products</div>
+          <ul>
+            <li><a href="#">Spot Trading</a></li>
+            <li><a href="#">P2P Marketplace</a></li>
+            <li><a href="#">Wallet</a></li>
+            <li><a href="#">Earn</a></li>
+            <li><a href="#">API</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <div class="footer-col-title">Company</div>
+          <ul>
+            <li><a href="#">About</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Press Kit</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <div class="footer-col-title">Support</div>
+          <ul>
+            <li><a href="#">Help Center</a></li>
+            <li><a href="#">KYC Guide</a></li>
+            <li><a href="#">Fee Schedule</a></li>
+            <li><a href="#">Bug Bounty</a></li>
+            <li><a href="#">Status Page</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span class="footer-bottom-copy">© 2025 FuelBTC. All rights reserved. fuelbtc.com</span>
+        <div class="footer-bottom-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+          <a href="#">Cookie Policy</a>
+          <a href="#">AML Policy</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // ── Nav scroll effect ─────────────────────────────────────────────
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 20);
+    });
+
+    // ── Generate candlestick background ──────────────────────────────
+    const bg = document.getElementById('candleBg');
+    const count = Math.ceil(window.innerWidth / 22);
+    for (let i = 0; i < count * 2; i++) {
+      const bodyH = 20 + Math.random() * 120;
+      const wickT = 5 + Math.random() * 20;
+      const wickB = 5 + Math.random() * 20;
+      const bull  = Math.random() > 0.45;
+      const delay = Math.random() * 4;
+      const dur   = 3 + Math.random() * 3;
+      const el = document.createElement('div');
+      el.className = `candle ${bull ? 'bull' : 'bear'}`;
+      el.style.animationDelay = `${delay}s`;
+      el.style.animationDuration = `${dur}s`;
+      el.innerHTML = `
+        <div class="candle-wick" style="height:${wickT}px"></div>
+        <div class="candle-body"  style="height:${bodyH}px"></div>
+        <div class="candle-wick" style="height:${wickB}px"></div>
+      `;
+      bg.appendChild(el);
+    }
+
+    // ── Ticker tape ───────────────────────────────────────────────────
+    const tickers = [
+      { pair:'BTC/USDT', price:'67,482.50', chg:'+2.34%', up:true },
+      { pair:'ETH/USDT', price:'3,521.80',  chg:'+1.87%', up:true },
+      { pair:'BNB/USDT', price:'612.45',    chg:'-0.43%', up:false },
+      { pair:'SOL/USDT', price:'178.92',    chg:'+4.12%', up:true },
+      { pair:'XRP/USDT', price:'0.5834',    chg:'+0.91%', up:true },
+      { pair:'ADA/USDT', price:'0.4712',    chg:'-1.22%', up:false },
+      { pair:'DOGE/USDT',price:'0.1643',    chg:'+3.05%', up:true },
+      { pair:'DOT/USDT', price:'8.94',      chg:'-0.78%', up:false },
+      { pair:'MATIC/USDT',price:'0.8812',   chg:'+2.55%', up:true },
+      { pair:'LINK/USDT',price:'14.72',     chg:'+1.44%', up:true },
+      { pair:'AVAX/USDT',price:'37.88',     chg:'-0.33%', up:false },
+      { pair:'UNI/USDT', price:'9.14',      chg:'+0.66%', up:true },
+    ];
+    const track = document.getElementById('tickerTrack');
+    // Double for seamless loop
+    [...tickers, ...tickers].forEach(t => {
+      const item = document.createElement('div');
+      item.className = 'ticker-item';
+      item.innerHTML = `
+        <span class="ticker-pair">${t.pair}</span>
+        <span class="ticker-price">$${t.price}</span>
+        <span class="ticker-chg ${t.up ? 'up' : 'down'}">${t.chg}</span>
+      `;
+      track.appendChild(item);
+    });
+
+    // ── Intersection Observer for fade-ins ────────────────────────────
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.style.opacity = '1';
+          e.target.style.transform = 'translateY(0)';
+          obs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.feature-card, .trust-card, .stat-cell, .p2p-offer').forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(20px)';
+      el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      obs.observe(el);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" fill="none">
+  <defs>
+    <linearGradient id="flame" x1="0" y1="100%" x2="0" y2="0%">
+      <stop offset="0%" stop-color="#F0B90B"/>
+      <stop offset="55%" stop-color="#FF6B00"/>
+      <stop offset="100%" stop-color="#FFD700"/>
+    </linearGradient>
+    <linearGradient id="btcGold" x1="0" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F0B90B"/>
+      <stop offset="100%" stop-color="#F8D843"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- ─── Flame / Lightning bolt logomark ─── -->
+  <!-- Outer shield/hexagon -->
+  <path d="M60 8 L96 28 L96 72 L60 92 L24 72 L24 28 Z" fill="#0B0E12" stroke="#F0B90B" stroke-width="2.5"/>
+  <!-- Inner flame bolt -->
+  <path d="M67 22 L48 56 L62 56 L53 88 L76 48 L61 48 Z" fill="url(#flame)" filter="url(#glow)"/>
+  <!-- BTC "B" integrated subtly -->
+  <path d="M55 38 C60 38 64 40 64 44 C64 48 60 49 60 49 C65 50 67 52 67 56 C67 61 62 63 56 63 L50 63 L50 38 Z M53 48 L58 48 C60.5 48 62 47 62 44.5 C62 42 60.5 41 58 41 L53 41 Z M53 61 L59 61 C62 61 64 59.5 64 57 C64 54.5 62 53 59 53 L53 53 Z" fill="#0B0E12" opacity="0.7"/>
+
+  <!-- ─── Wordmark: FUEL ─── -->
+  <text x="116" y="68" font-family="'Arial Black', sans-serif" font-weight="900" font-size="46" letter-spacing="-1" fill="url(#btcGold)" filter="url(#glow)">FUEL</text>
+
+  <!-- ─── Wordmark: BTC ─── -->
+  <text x="264" y="68" font-family="'Arial Black', sans-serif" font-weight="900" font-size="46" letter-spacing="-1" fill="#EAECEF">BTC</text>
+
+  <!-- ─── Domain suffix ─── -->
+  <text x="116" y="88" font-family="'Arial', sans-serif" font-weight="400" font-size="13" letter-spacing="6" fill="#848E9C" text-transform="uppercase">.COM</text>
+
+  <!-- ─── Tagline ─── -->
+  <text x="116" y="104" font-family="'Arial', sans-serif" font-weight="400" font-size="11" letter-spacing="3" fill="#5E6673">TRADE · EARN · GROW</text>
+</svg>
